@@ -244,7 +244,7 @@ const pressMentions = [
 const storyCards = [
   {
     title: 'Hard Work Starts Here',
-    body: 'Built for long shifts, indoor floors, and all-day comfort.',
+    body: 'Built for long shifts and all-day comfort.',
     cta: 'SHOP NOW',
     image: imageUrl(
       'realistic worker standing beside truck wearing rugged work boots, street level ecommerce lifestyle photo, no text',
@@ -253,7 +253,7 @@ const storyCards = [
   },
   {
     title: 'Everyday. Tactical. Ready',
-    body: 'Fast movement, everyday support, and daily tactical wear.',
+    body: 'Fast movement, everyday support, and tactical wear.',
     cta: 'SHOP NOW',
     image: imageUrl(
       'realistic person climbing rope in tactical boots, outdoor training lifestyle image, no text',
@@ -265,12 +265,12 @@ const storyCards = [
 const membershipOffers = [
   {
     title: 'SAVE UP TO 20% OFF',
-    body: 'Join us for free & unlock your exclusive benefits.',
+    body: 'Join us for free and unlock exclusive benefits.',
     cta: 'SIGN UP NOW',
   },
   {
     title: 'GET UP TO 20% OFF',
-    body: 'Member-exclusive styles! Grab your favorites while stocks last.',
+    body: 'Member-exclusive styles and early access to new drops.',
     cta: 'GET REWARDS',
   },
 ]
@@ -702,7 +702,7 @@ function App() {
                           className="text-link"
                           onClick={() => openProduct(products[index])}
                         >
-                          Shop Now
+                          SHOP NOW
                         </button>
                       </div>
                     </article>
@@ -729,7 +729,7 @@ function App() {
                 <div className="membership-copy">
                   <p className="label">MEMBERSHIP</p>
                   <h2>Join for up to 20% off.</h2>
-                  <p>Member perks, early access, and a cleaner rewards block closer to the reference flow.</p>
+                  <p>Member perks, early access, and more value across every new drop.</p>
                 </div>
 
                 <div className="membership-offers">

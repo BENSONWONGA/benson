@@ -109,7 +109,7 @@ img {
   position: sticky;
   top: 0;
   z-index: 20;
-  padding: 14px 26px;
+  padding: 12px 24px;
   margin-bottom: 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   background: #fff;
@@ -127,8 +127,8 @@ img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 68px;
-  height: 34px;
+  width: 62px;
+  height: 30px;
   color: #111;
 }
 
@@ -144,7 +144,7 @@ img {
 }
 
 .brand-wording strong {
-  font-size: 17px;
+  font-size: 16px;
   font-style: italic;
   font-weight: 900;
   letter-spacing: -0.05em;
@@ -170,9 +170,9 @@ img {
 .header-nav button {
   padding: 8px 12px;
   color: var(--text);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.03em;
 }
 
 .header-tools {
@@ -185,8 +185,8 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-width: 228px;
-  padding: 9px 16px;
+  min-width: 212px;
+  padding: 8px 15px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 999px;
   background: #f7f7f7;
@@ -270,14 +270,14 @@ img {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.28));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.34));
 }
 
 .hero-copy {
   position: absolute;
-  left: 46px;
+  left: 34px;
   right: 28px;
-  bottom: 44px;
+  bottom: 54px;
   z-index: 1;
   color: white;
 }
@@ -316,9 +316,9 @@ img {
 .hero-copy h1 {
   margin-top: 10px;
   color: white;
-  font-size: clamp(3rem, 4.85vw, 5.15rem);
+  font-size: clamp(2.7rem, 4.45vw, 4.9rem);
   line-height: 0.9;
-  max-width: 6.2ch;
+  max-width: 5.7ch;
 }
 
 .hero-description,
@@ -334,11 +334,11 @@ img {
 }
 
 .hero-copy h2 {
-  margin-top: 14px;
-  max-width: 31ch;
+  margin-top: 12px;
+  max-width: 26ch;
   color: rgba(255, 255, 255, 0.92);
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.42;
   letter-spacing: 0;
 }
 
@@ -346,7 +346,7 @@ img {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .primary-btn,
@@ -364,8 +364,8 @@ img {
   color: white;
   background: #ff7a3d;
   box-shadow: none;
-  font-size: 14px;
-  letter-spacing: 0.01em;
+  font-size: 13px;
+  letter-spacing: 0.03em;
 }
 
 .ghost-btn {
@@ -385,8 +385,8 @@ img {
 
 .hero-controls {
   position: absolute;
-  left: 46px;
-  bottom: 18px;
+  left: 34px;
+  bottom: 16px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
@@ -429,7 +429,7 @@ img {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  padding: 16px 20px 18px;
+  padding: 14px 18px 16px;
   background: #b40f11;
 }
 
@@ -440,7 +440,7 @@ img {
 .press-strip strong {
   display: block;
   color: white;
-  font-size: clamp(1rem, 1.8vw, 1.55rem);
+  font-size: clamp(0.95rem, 1.7vw, 1.45rem);
   letter-spacing: -0.05em;
 }
 
@@ -453,12 +453,12 @@ img {
 
 .content-section {
   display: grid;
-  gap: 20px;
-  padding: 60px 22px 0;
+  gap: 18px;
+  padding: 56px 22px 0;
 }
 
 .press-strip + .content-section {
-  padding-top: 46px;
+  padding-top: 38px;
 }
 
 .section-head,
@@ -509,6 +509,11 @@ img {
 .product-card {
   overflow: hidden;
   border-radius: 0;
+  background: transparent;
+}
+
+.product-card,
+.membership-offer {
   background: white;
 }
 
@@ -523,7 +528,7 @@ img {
 }
 
 .category-card img {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 4 / 5.2;
 }
 
 .category-copy,
@@ -535,7 +540,10 @@ img {
 .category-copy span {
   display: block;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .category-copy h3,
@@ -553,8 +561,10 @@ img {
 .text-link {
   margin-top: 12px;
   padding: 0;
-  color: var(--accent-strong);
+  color: var(--text-strong);
   font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
 }
 
 .story-grid {
@@ -563,21 +573,16 @@ img {
   gap: 18px;
 }
 
-.story-card,
-.membership-card,
 .product-card,
-.journal-card,
-.social-card,
 .detail-gallery,
 .detail-info,
 .cart-list,
-.checkout-card,
-.site-footer {
+.checkout-card {
   box-shadow: var(--shadow-soft);
 }
 
 .story-card img {
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9.6;
 }
 
 .story-copy h3 {
@@ -599,9 +604,10 @@ img {
 .membership-card {
   grid-template-columns: minmax(260px, 0.52fr) minmax(0, 1fr);
   align-items: start;
-  padding: 32px 28px;
+  padding: 26px 0 0;
   border: 1px solid rgba(0, 0, 0, 0.06);
-  background: white;
+  border-width: 1px 0 0;
+  background: transparent;
 }
 
 .membership-offers {
@@ -615,7 +621,7 @@ img {
   gap: 12px;
   padding: 22px;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fafafa;
+  background: white;
 }
 
 .membership-offer h3 {
