@@ -830,7 +830,7 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">FOLLOW US</p>
-                    <h2>FOLLOW US @NORTIV8 SHOES</h2>
+                    <h2>Follow @NORTIV8</h2>
                   </div>
                 </div>
 
@@ -1022,7 +1022,7 @@ function App() {
         <footer className="site-footer">
           <div>
             <p className="label">JOIN OUR MAILING LIST</p>
-            <h3>Get first access to new drops, rewards, and seasonal offers.</h3>
+            <h3>Get first access to new drops and exclusive offers.</h3>
           </div>
           <div className="footer-columns">
             <div>
