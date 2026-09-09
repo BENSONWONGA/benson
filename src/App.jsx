@@ -10,15 +10,16 @@ const heroSlides = [
     id: 1,
     eyebrow: 'EARLY BIRD OFFER',
     title: 'GEOPILOT WORKNANO STEP',
-    subtitle: 'KEEPS HIGH-STEP WORKERS STEADY, CUSHIONED, AND PROTECTED THROUGH LONG SHIFTS.',
-    body: 'Early bird offer. Built for hard floors, long hours, and all-day support.',
+    subtitle:
+      'KEEPS HIGH-STEP WORKERS STEADY, CUSHIONED, AND PROTECTED THROUGH LONG SHIFTS ON HARD INDOOR FLOORS.',
+    body: 'EARLY BIRD OFFER. SHOP NOW.',
     cta: 'Shop Now',
     leftImage: imageUrl(
-      'premium rugged work boot closeup on workshop floor, black and orange safety boot product photo, gritty garage lighting, ecommerce campaign, no text',
+      'realistic rugged work boot standing over another boot on auto repair shop floor, black and orange safety boot, gritty industrial garage lighting, authentic ecommerce hero photography, no text',
       'landscape_16_9',
     ),
     rightImage: imageUrl(
-      'mechanic sitting in auto repair shop tying rugged work boots, premium editorial workwear campaign, warm industrial lighting, no text',
+      'realistic mechanic sitting on creeper in auto repair shop tying rugged black and orange work boots, workshop interior, authentic industrial lifestyle campaign, no text',
       'landscape_16_9',
     ),
   },
@@ -59,7 +60,7 @@ const heroSlides = [
 const categories = [
   {
     title: 'WORK BOOTS',
-    caption: '全天站立与强支撑',
+    caption: 'Hard work starts here',
     image: imageUrl(
       'premium work boot lifestyle image, delivery worker stepping off truck in clean urban scene, stylish rugged boots, editorial ecommerce photo',
       'portrait_4_3',
@@ -67,7 +68,7 @@ const categories = [
   },
   {
     title: 'MILITARY BOOTS',
-    caption: '轻量包裹与稳定抓地',
+    caption: 'Everyday. Tactical. Ready',
     image: imageUrl(
       'premium tactical boots lifestyle image, athletic person climbing rope outdoors, modern military boots, crisp adventure fashion campaign',
       'portrait_4_3',
@@ -75,7 +76,7 @@ const categories = [
   },
   {
     title: 'HIKING BOOTS',
-    caption: '长距离徒步防护',
+    caption: 'Trail-ready support',
     image: imageUrl(
       'premium hiking boots lifestyle image, man and woman walking in city to trail transition, elevated outdoor fashion photography',
       'portrait_4_3',
@@ -83,7 +84,7 @@ const categories = [
   },
   {
     title: 'HIKING SHOES',
-    caption: '日常穿着与快节奏出行',
+    caption: 'Lightweight all-day wear',
     image: imageUrl(
       'premium hiking shoes lifestyle image, photographer crouching on alpine overlook, sleek outdoor shoes, refined retail editorial style',
       'portrait_4_3',
@@ -94,38 +95,38 @@ const categories = [
 const pressMentions = [
   {
     outlet: 'BUZZFEED',
-    quote: '"如果你还不知道这类户外鞋品牌，今天就是你的官方种草日。"',
+    quote: '"If you do not know about these boots yet, let this be your wake-up call."',
   },
   {
     outlet: 'TRAVEL + LEISURE',
-    quote: '"我会把这种鞋打包进旅程里，因为它的耐穿和舒适都足够稳定。"',
+    quote: '"I pack these waterproof boots for the comfort and durability."',
   },
   {
     outlet: "MEN'S JOURNAL",
-    quote: '"高评分本身已经在告诉用户：它值得被放进首选清单。"',
+    quote: '"Thousands of five-star ratings make them easy to shortlist."',
   },
   {
-    outlet: 'HYPEOUTDOOR',
-    quote: '"当机能感遇上更轻的视觉系统，电商首页也能有高级产品感。"',
+    outlet: 'HUFFPOST',
+    quote: '"They last as long and feel as reliable as options priced much higher."',
   },
 ]
 
 const storyCards = [
   {
     title: 'Hard Work Starts Here',
-    body: '将促销入口、主推鞋款和品牌氛围统一到同一层玻璃系统里。',
+    body: 'Built for long shifts, indoor floors, and all-day comfort.',
     cta: 'Shop Now',
     image: imageUrl(
-      'premium outdoor boots still life in glass showroom, silver reflections, tactile materials, cinematic fashion ecommerce image',
+      'realistic worker standing beside truck wearing rugged work boots, street level ecommerce lifestyle photo, no text',
       'landscape_4_3',
     ),
   },
   {
     title: 'Everyday. Tactical. Ready',
-    body: '通过半透明浮层、圆润搜索区和悬浮图文卡片，模拟 iOS 式内容堆叠。',
+    body: 'Fast movement, everyday support, and a cleaner interface layer.',
     cta: 'Explore',
     image: imageUrl(
-      'premium tactical sneakers in translucent architectural space, sleek product presentation, soft silver and blue tones, editorial photo',
+      'realistic person climbing rope in tactical boots, outdoor training lifestyle image, no text',
       'landscape_4_3',
     ),
   },
@@ -196,26 +197,26 @@ const products = [
 
 const blogPosts = [
   {
-    title: '6 款适合城市与轻户外切换的鞋型',
-    body: '如果首页风格像 NORTIV8，但视觉想更高级，内容区就要承担“品牌编辑部”的角色。',
+    title: '6 Best Shoes For Camping',
+    body: 'Comfort, traction, and weather-ready support for long days outdoors.',
     image: imageUrl(
-      'editorial outdoor footwear blog image, stylish camping setup with modern boots and soft silver blue palette, magazine quality',
+      'realistic camping footwear editorial image, rugged boots beside tent and outdoor gear, ecommerce blog style, no text',
       'landscape_4_3',
     ),
   },
   {
-    title: '如何让户外鞋电商首页不再像传统模板',
-    body: '关键不是盲目加玻璃，而是把导航、搜索、促销、卡片都放进一致的透明深度体系。',
+    title: 'How To Choose Hiking Boots',
+    body: 'What to look for in weight, protection, waterproofing, and grip.',
     image: imageUrl(
-      'editorial design concept image for premium footwear ecommerce, translucent interface over boots, clean visual storytelling',
+      'realistic hiking boot guide editorial image, outdoor boots on trail map and gear, ecommerce blog style, no text',
       'landscape_4_3',
     ),
   },
   {
-    title: '为什么液态玻璃风适合中高端鞋类品牌',
-    body: '它能削弱促销页面的粗糙感，让商品图和生活方式内容看起来更像品牌广告。',
+    title: '7 Black Tactical Boots For Men',
+    body: 'Extra protection, comfort, and durability for hard-use situations.',
     image: imageUrl(
-      'luxury lifestyle image of premium boots with crystal clear display stands, contemporary soft light, editorial retail campaign',
+      'realistic tactical boot editorial image, black boots with outdoor field gear, ecommerce blog style, no text',
       'landscape_4_3',
     ),
   },
@@ -434,7 +435,7 @@ function App() {
             </span>
             <span className="brand-wording">
               <strong>Aether8</strong>
-              <small>Work. Hiking. Tactical.</small>
+              <small>Hiking, Working</small>
             </span>
           </button>
 
@@ -537,7 +538,7 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">CATEGORY & LATEST</p>
-                    <h2>Built for work, tactical, and hiking.</h2>
+                    <h2>CATEGORY & LATEST</h2>
                   </div>
                   <button type="button" className="ghost-btn light">
                     View All
@@ -604,7 +605,7 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">HOT PICKS</p>
-                    <h2>Hot picks for this season.</h2>
+                    <h2>Top picks for this season.</h2>
                   </div>
                   <button type="button" className="ghost-btn light">
                     Filter
@@ -663,7 +664,7 @@ function App() {
               <section className="content-section">
                 <div className="section-head">
                   <div>
-                    <p className="label">AETHERX JOURNAL</p>
+                    <p className="label">AETHER8 BLOG</p>
                     <h2>Field notes and footwear guides.</h2>
                   </div>
                 </div>
@@ -688,7 +689,7 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">FOLLOW US</p>
-                    <h2>Follow us @Aether8 shoes.</h2>
+                    <h2>FOLLOW US @AETHER8 SHOES</h2>
                   </div>
                 </div>
 

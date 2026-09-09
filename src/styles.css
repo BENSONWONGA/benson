@@ -118,7 +118,7 @@ img {
 .brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   padding: 0;
   color: var(--text-strong);
 }
@@ -127,9 +127,14 @@ img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 36px;
+  width: 84px;
+  height: 42px;
   color: #111;
+}
+
+.brand-mark svg {
+  width: 100%;
+  height: 100%;
 }
 
 .brand-wording {
@@ -139,13 +144,14 @@ img {
 }
 
 .brand-wording strong {
-  font-size: 16px;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.04em;
 }
 
 .brand-wording small {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 11px;
+  display: none;
 }
 
 .header-nav {
@@ -159,8 +165,9 @@ img {
 .header-nav button {
   padding: 8px 10px;
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 .header-tools {
@@ -173,7 +180,7 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-width: 228px;
+  min-width: 260px;
   padding: 10px 16px;
   border: 1px solid rgba(0, 0, 0, 0.04);
   border-radius: 999px;
@@ -235,7 +242,7 @@ img {
 .hero-stage {
   position: relative;
   overflow: hidden;
-  min-height: 570px;
+  min-height: 610px;
   border-radius: 0;
   background: #ddd;
 }
@@ -243,12 +250,12 @@ img {
 .hero-grid {
   display: grid;
   grid-template-columns: 37% 63%;
-  min-height: 570px;
+  min-height: 610px;
 }
 
 .hero-panel {
   position: relative;
-  min-height: 570px;
+  min-height: 610px;
 }
 
 .hero-panel img {
@@ -266,9 +273,9 @@ img {
 
 .hero-copy {
   position: absolute;
-  left: 40px;
+  left: 64px;
   right: 28px;
-  bottom: 44px;
+  bottom: 54px;
   z-index: 1;
   color: white;
 }
@@ -277,10 +284,10 @@ img {
 .label,
 .story-copy .label {
   margin: 0;
-  color: #9a9a9a;
-  font-size: 12px;
+  color: #8c8c8c;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -299,8 +306,9 @@ img {
 .hero-copy h1 {
   margin-top: 14px;
   color: white;
-  font-size: clamp(2.4rem, 4vw, 4rem);
-  line-height: 0.95;
+  font-size: clamp(2.5rem, 4.2vw, 4.5rem);
+  line-height: 0.92;
+  max-width: 7.5ch;
 }
 
 .hero-description,
@@ -317,10 +325,10 @@ img {
 
 .hero-copy h2 {
   margin-top: 10px;
-  max-width: 22ch;
+  max-width: 24ch;
   color: rgba(255, 255, 255, 0.92);
-  font-size: 16px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.4;
   letter-spacing: 0;
 }
 
@@ -328,13 +336,13 @@ img {
   position: absolute;
   left: 32px;
   bottom: 28px;
-  max-width: 320px;
-  padding: 14px 16px;
+  max-width: 260px;
+  padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 18px;
+  border-radius: 14px;
   color: white;
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: 11px;
+  line-height: 1.45;
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(14px);
 }
@@ -361,6 +369,7 @@ img {
   color: white;
   background: linear-gradient(180deg, #ff804b, #ff6d37);
   box-shadow: none;
+  font-size: 15px;
 }
 
 .ghost-btn {
@@ -427,32 +436,33 @@ img {
 .press-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 20px 20px 24px;
   background: #b40f11;
 }
 
 .press-strip article {
-  padding: 10px 12px;
+  padding: 6px 4px;
 }
 
 .press-strip strong {
   display: block;
   color: white;
-  font-size: clamp(1.2rem, 2vw, 2rem);
+  font-size: clamp(1.1rem, 2vw, 1.8rem);
   letter-spacing: -0.05em;
 }
 
 .press-strip p {
   margin: 8px 0 0;
   color: rgba(255, 255, 255, 0.92);
-  line-height: 1.65;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .content-section {
   display: grid;
   gap: 20px;
-  padding: 54px 22px 0;
+  padding: 72px 22px 0;
 }
 
 .section-head,
@@ -475,7 +485,7 @@ img {
 .cart-list h2,
 .checkout-card h2 {
   margin-top: 12px;
-  font-size: clamp(2rem, 3vw, 3rem);
+  font-size: clamp(2rem, 3vw, 3.2rem);
   line-height: 1;
 }
 
@@ -512,7 +522,7 @@ img {
 .detail-gallery > img,
 .cart-item img {
   width: 100%;
-  border-radius: 24px;
+  border-radius: 0;
   object-fit: cover;
 }
 
@@ -523,7 +533,7 @@ img {
 .category-copy,
 .story-copy,
 .journal-copy {
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
 .category-copy span {
@@ -539,7 +549,7 @@ img {
 .cart-copy h3 {
   margin: 10px 0 0;
   color: var(--text-strong);
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1.02;
   letter-spacing: -0.04em;
 }
@@ -575,7 +585,7 @@ img {
 }
 
 .story-copy h3 {
-  font-size: 32px;
+  font-size: 28px;
 }
 
 .membership-card {
@@ -668,7 +678,7 @@ img {
 }
 
 .product-meta h3 {
-  font-size: 28px;
+  font-size: 24px;
 }
 
 .product-meta span {
@@ -732,7 +742,7 @@ img {
 }
 
 .social-card {
-  padding: 12px;
+  padding: 0;
 }
 
 .social-card img,
@@ -740,12 +750,12 @@ img {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 18px;
+  border-radius: 0;
 }
 
 .social-card span {
   display: block;
-  margin-top: 10px;
+  margin-top: 8px;
   color: var(--muted);
   font-size: 13px;
   text-align: center;
@@ -1031,6 +1041,12 @@ img {
 
   .hero-panel {
     min-height: 360px;
+  }
+
+  .hero-copy {
+    left: 24px;
+    right: 24px;
+    bottom: 24px;
   }
 
   .press-strip,
