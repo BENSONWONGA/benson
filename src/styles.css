@@ -454,7 +454,11 @@ img {
 .content-section {
   display: grid;
   gap: 20px;
-  padding: 70px 22px 0;
+  padding: 60px 22px 0;
+}
+
+.press-strip + .content-section {
+  padding-top: 46px;
 }
 
 .section-head,
@@ -477,7 +481,7 @@ img {
 .cart-list h2,
 .checkout-card h2 {
   margin-top: 0;
-  font-size: clamp(2rem, 3vw, 3.2rem);
+  font-size: clamp(1.9rem, 2.8vw, 3rem);
   line-height: 1;
 }
 
@@ -492,7 +496,7 @@ img {
 .journal-grid,
 .social-grid {
   display: grid;
-  gap: 20px;
+  gap: 18px;
 }
 
 .category-grid {
@@ -541,7 +545,7 @@ img {
 .cart-copy h3 {
   margin: 10px 0 0;
   color: var(--text-strong);
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.02;
   letter-spacing: -0.04em;
 }
@@ -680,7 +684,7 @@ img {
 }
 
 .product-meta h3 {
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .product-meta span {

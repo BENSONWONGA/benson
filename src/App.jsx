@@ -1,9 +1,139 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 const imageUrl = (prompt, imageSize = 'landscape_16_9') =>
   `https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=${encodeURIComponent(
     prompt,
   )}&image_size=${imageSize}`
+
+const fallbackPalettes = {
+  heroLeft: {
+    start: '#171717',
+    end: '#3d3d3d',
+    accent: '#ff7a3d',
+    accentSoft: '#ffb489',
+    line: 'rgba(255,255,255,0.08)',
+  },
+  heroRight: {
+    start: '#d9d5ce',
+    end: '#bab2a5',
+    accent: '#1f1f1f',
+    accentSoft: '#ff7a3d',
+    line: 'rgba(0,0,0,0.08)',
+  },
+  category: {
+    start: '#ece7de',
+    end: '#d7d1c6',
+    accent: '#111111',
+    accentSoft: '#ff7a3d',
+    line: 'rgba(0,0,0,0.08)',
+  },
+  product: {
+    start: '#f4f4f4',
+    end: '#e8e8e8',
+    accent: '#101010',
+    accentSoft: '#cfcfcf',
+    line: 'rgba(0,0,0,0.08)',
+  },
+  editorial: {
+    start: '#e5e0d8',
+    end: '#cec7bc',
+    accent: '#151515',
+    accentSoft: '#ff7a3d',
+    line: 'rgba(0,0,0,0.08)',
+  },
+  social: {
+    start: '#efefef',
+    end: '#dfdfdf',
+    accent: '#111111',
+    accentSoft: '#bcbcbc',
+    line: 'rgba(0,0,0,0.08)',
+  },
+}
+
+const fallbackCache = new Map()
+
+function createFallbackImage(title, variant = 'product') {
+  const cacheKey = `${variant}:${title}`
+  const cached = fallbackCache.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+
+  const palette = fallbackPalettes[variant] ?? fallbackPalettes.product
+  const safeTitle = String(title)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+  const subtitle =
+    variant === 'heroLeft'
+      ? 'WORK BOOT EDITORIAL'
+      : variant === 'heroRight'
+        ? 'LIFESTYLE SCENE'
+        : variant === 'category'
+          ? 'COLLECTION'
+          : variant === 'editorial'
+            ? 'FIELD NOTES'
+            : variant === 'social'
+              ? 'COMMUNITY'
+              : 'PRODUCT PREVIEW'
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="${safeTitle}">
+      <defs>
+        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="${palette.start}" />
+          <stop offset="100%" stop-color="${palette.end}" />
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="900" fill="url(#bg)" />
+      <g opacity="0.85">
+        <circle cx="960" cy="168" r="130" fill="${palette.accentSoft}" opacity="0.22" />
+        <circle cx="170" cy="720" r="160" fill="${palette.accentSoft}" opacity="0.14" />
+      </g>
+      <g stroke="${palette.line}" stroke-width="2" fill="none">
+        <path d="M0 160h1200M0 510h1200M240 0v900M780 0v900" />
+        <path d="M0 760c160-70 318-100 478-92c147 7 285 44 442 114c85 38 178 63 280 74" />
+      </g>
+      <g transform="translate(144 188)">
+        <rect x="0" y="0" width="440" height="300" rx="30" fill="rgba(255,255,255,0.06)" />
+        <path d="M48 228c52-8 118-16 179-9c66 7 124 27 174 54h112v45H32c-6-41 5-73 16-90z" fill="${palette.accent}" opacity="0.92" />
+        <path d="M187 166c58-34 125-52 170-45c39 6 56 26 58 58c2 25-9 49-32 71l-32-20c14-17 18-34 11-50c-7-16-26-24-59-23c-37 1-86 15-139 40l23-31z" fill="${palette.accentSoft}" opacity="0.74" />
+        <rect x="246" y="238" width="34" height="46" rx="12" fill="${palette.end}" opacity="0.86" />
+        <rect x="314" y="244" width="34" height="40" rx="12" fill="${palette.end}" opacity="0.86" />
+      </g>
+      <g transform="translate(144 664)">
+        <text x="0" y="0" fill="${palette.accent}" font-size="28" font-family="Arial, Helvetica, sans-serif" letter-spacing="5">${subtitle}</text>
+        <text x="0" y="62" fill="${palette.accent}" font-size="76" font-weight="700" font-family="Arial, Helvetica, sans-serif">${safeTitle}</text>
+      </g>
+    </svg>
+  `
+
+  const dataUri = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+  fallbackCache.set(cacheKey, dataUri)
+  return dataUri
+}
+
+function SmartImage({ src, alt, variant = 'product', className }) {
+  const [currentSrc, setCurrentSrc] = useState(src)
+
+  useEffect(() => {
+    setCurrentSrc(src)
+  }, [src])
+
+  const fallbackSrc = useMemo(() => createFallbackImage(alt, variant), [alt, variant])
+
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      className={className}
+      onError={() => {
+        setCurrentSrc((value) => (value === fallbackSrc ? value : fallbackSrc))
+      }}
+    />
+  )
+}
 
 const heroSlides = [
   {
@@ -492,7 +622,7 @@ function App() {
               <section className="hero-stage">
                 <div className="hero-grid">
                   <article className="hero-panel hero-left">
-                    <img src={hero.leftImage} alt={hero.title} />
+                    <SmartImage src={hero.leftImage} alt={hero.title} variant="heroLeft" />
                     <div className="hero-copy">
                       <p>{hero.eyebrow}</p>
                       <h1>{hero.title}</h1>
@@ -510,7 +640,11 @@ function App() {
                   </article>
 
                   <article className="hero-panel hero-right">
-                    <img src={hero.rightImage} alt={`${hero.title} lifestyle`} />
+                    <SmartImage
+                      src={hero.rightImage}
+                      alt={`${hero.title} lifestyle`}
+                      variant="heroRight"
+                    />
                   </article>
                 </div>
 
@@ -559,7 +693,7 @@ function App() {
                 <div className="category-grid">
                   {categories.map((category, index) => (
                     <article className="category-card" key={category.title}>
-                      <img src={category.image} alt={category.title} />
+                      <SmartImage src={category.image} alt={category.title} variant="category" />
                       <div className="category-copy">
                         <span>{category.caption}</span>
                         <h3>{category.title}</h3>
@@ -579,7 +713,7 @@ function App() {
               <section className="story-grid">
                 {storyCards.map((story) => (
                   <article className="story-card" key={story.title}>
-                    <img src={story.image} alt={story.title} />
+                    <SmartImage src={story.image} alt={story.title} variant="editorial" />
                     <div className="story-copy">
                       <h3>{story.title}</h3>
                       <p>{story.body}</p>
@@ -626,7 +760,7 @@ function App() {
                   {products.map((product) => (
                     <article className="product-card" key={product.id}>
                       <div className="product-image-shell">
-                        <img src={product.image} alt={product.name} />
+                        <SmartImage src={product.image} alt={product.name} variant="product" />
                         <button type="button" className="floating-badge">
                           {product.category}
                         </button>
@@ -682,7 +816,7 @@ function App() {
                 <div className="journal-grid">
                   {blogPosts.map((post) => (
                     <article key={post.title} className="journal-card">
-                      <img src={post.image} alt={post.title} />
+                      <SmartImage src={post.image} alt={post.title} variant="editorial" />
                       <div className="journal-copy">
                         <h3>{post.title}</h3>
                         <p>{post.body}</p>
@@ -706,7 +840,11 @@ function App() {
                 <div className="social-grid">
                   {socialGallery.map((item) => (
                     <article key={item.id} className="social-card">
-                      <img src={item.image} alt={`Nortiv8 social ${item.id}`} />
+                      <SmartImage
+                        src={item.image}
+                        alt={`Nortiv8 social ${item.id}`}
+                        variant="social"
+                      />
                       <span>@NORTIV 8</span>
                     </article>
                   ))}
@@ -718,7 +856,7 @@ function App() {
           {activeView === 'detail' && (
             <section className="detail-layout">
               <div className="detail-gallery">
-                <img src={selectedProduct.image} alt={selectedProduct.name} />
+                <SmartImage src={selectedProduct.image} alt={selectedProduct.name} variant="product" />
                 <div className="thumbnail-row">
                   {products.map((product) => (
                     <button
@@ -734,7 +872,7 @@ function App() {
                         setSelectedColor(product.colors[0])
                       }}
                     >
-                      <img src={product.image} alt={product.name} />
+                      <SmartImage src={product.image} alt={product.name} variant="product" />
                     </button>
                   ))}
                 </div>
@@ -828,7 +966,11 @@ function App() {
                     key={`${item.productId}-${item.size}-${item.color}`}
                     className="cart-item"
                   >
-                    <img src={item.product?.image} alt={item.product?.name} />
+                    <SmartImage
+                      src={item.product?.image}
+                      alt={item.product?.name ?? 'Product image'}
+                      variant="product"
+                    />
                     <div className="cart-copy">
                       <p>{item.product?.category}</p>
                       <h3>{item.product?.name}</h3>
