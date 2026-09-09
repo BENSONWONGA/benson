@@ -749,7 +749,7 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">HOT PICKS</p>
-                    <h2>Top picks for this season.</h2>
+                    <h2>Shop our top picks.</h2>
                   </div>
                   <button type="button" className="ghost-btn light">
                     SHOP MORE
@@ -761,14 +761,11 @@ function App() {
                     <article className="product-card" key={product.id}>
                       <div className="product-image-shell">
                         <SmartImage src={product.image} alt={product.name} variant="product" />
-                        <button type="button" className="floating-badge">
-                          {product.category}
-                        </button>
                       </div>
 
                       <div className="product-meta">
                         <div>
-                          <p>{product.detail}</p>
+                          <p>{product.category}</p>
                           <h3>{product.name}</h3>
                         </div>
                         <span>{product.rating}</span>
@@ -783,7 +780,7 @@ function App() {
                         <strong>¥{product.price}</strong>
                         <div className="footer-actions">
                           <button type="button" className="ghost-btn compact" onClick={() => openProduct(product)}>
-                            Details
+                            DETAILS
                           </button>
                           <button
                             type="button"
@@ -796,7 +793,7 @@ function App() {
                               setActiveView('cart')
                             }}
                           >
-                            Quick Add
+                            QUICK ADD
                           </button>
                         </div>
                       </div>
@@ -809,7 +806,7 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">FIELD NOTES</p>
-                    <h2>Field notes and footwear guides.</h2>
+                    <h2>Latest from the blog.</h2>
                   </div>
                 </div>
 
@@ -821,7 +818,7 @@ function App() {
                         <h3>{post.title}</h3>
                         <p>{post.body}</p>
                         <button type="button" className="text-link">
-                          View More
+                          READ MORE
                         </button>
                       </div>
                     </article>
