@@ -11,15 +11,15 @@ const heroSlides = [
     eyebrow: 'EARLY BIRD OFFER',
     title: 'GEOPILOT WORKNANO STEP',
     subtitle:
-      'KEEPS HIGH-STEP WORKERS STEADY, CUSHIONED, AND PROTECTED THROUGH LONG SHIFTS ON HARD INDOOR FLOORS.',
+      'MORE GRIP, MORE CUSHION, AND MORE SUPPORT FOR LONG SHIFTS ON HARD INDOOR FLOORS.',
     body: 'EARLY BIRD OFFER. SHOP NOW.',
-    cta: 'Shop Now',
+    cta: 'SHOP NOW',
     leftImage: imageUrl(
-      'realistic rugged work boot standing over another boot on auto repair shop floor, black and orange safety boot, gritty industrial garage lighting, authentic ecommerce hero photography, no text',
+      'premium ecommerce hero photo of two rugged black and orange work boots placed on an auto repair shop floor, full boots clearly visible, gritty industrial garage lighting, realistic product campaign photography, no text',
       'landscape_16_9',
     ),
     rightImage: imageUrl(
-      'realistic mechanic sitting on creeper in auto repair shop tying rugged black and orange work boots, workshop interior, authentic industrial lifestyle campaign, no text',
+      'realistic mechanic sitting in an auto repair workshop tying rugged black and orange work boots, wider scene with tool wall and fluorescent shop lights, authentic industrial ecommerce campaign photo, no text',
       'landscape_16_9',
     ),
   },
@@ -29,7 +29,7 @@ const heroSlides = [
     title: 'CITY HIKE ESSENTIALS',
     subtitle: 'LIGHTWEIGHT TRACTION FOR WEEKEND TRAILS, DAILY COMMUTES, AND SUMMER ESCAPES.',
     body: 'Explore trail-ready shoes with a cleaner iOS-like interface layered onto a familiar commerce skeleton.',
-    cta: 'Explore Now',
+    cta: 'EXPLORE NOW',
     leftImage: imageUrl(
       'premium hiking shoe closeup on rock surface, black and tan outdoor sneaker product campaign, crisp daylight, no text',
       'landscape_16_9',
@@ -45,7 +45,7 @@ const heroSlides = [
     title: 'FIELD READY TACTICAL',
     subtitle: 'STABLE, LIGHTWEIGHT, AND READY FOR FAST MOVEMENT ACROSS MIXED TERRAIN.',
     body: 'A more faithful nortiv8-style homepage rhythm, refined with restrained translucent UI touches.',
-    cta: 'View Collection',
+    cta: 'VIEW COLLECTION',
     leftImage: imageUrl(
       'premium tactical boot product photo on dark textured surface, black outdoor boot with subtle orange accents, no text',
       'landscape_16_9',
@@ -115,7 +115,7 @@ const storyCards = [
   {
     title: 'Hard Work Starts Here',
     body: 'Built for long shifts, indoor floors, and all-day comfort.',
-    cta: 'Shop Now',
+    cta: 'SHOP NOW',
     image: imageUrl(
       'realistic worker standing beside truck wearing rugged work boots, street level ecommerce lifestyle photo, no text',
       'landscape_4_3',
@@ -123,12 +123,25 @@ const storyCards = [
   },
   {
     title: 'Everyday. Tactical. Ready',
-    body: 'Fast movement, everyday support, and a cleaner interface layer.',
-    cta: 'Explore',
+    body: 'Fast movement, everyday support, and daily tactical wear.',
+    cta: 'SHOP NOW',
     image: imageUrl(
       'realistic person climbing rope in tactical boots, outdoor training lifestyle image, no text',
       'landscape_4_3',
     ),
+  },
+]
+
+const membershipOffers = [
+  {
+    title: 'SAVE UP TO 20% OFF',
+    body: 'Join us for free & unlock your exclusive benefits.',
+    cta: 'SIGN UP NOW',
+  },
+  {
+    title: 'GET UP TO 20% OFF',
+    body: 'Member-exclusive styles! Grab your favorites while stocks last.',
+    cta: 'GET REWARDS',
   },
 ]
 
@@ -434,8 +447,10 @@ function App() {
               </svg>
             </span>
             <span className="brand-wording">
-              <strong>Aether8</strong>
-              <small>Hiking, Working</small>
+              <strong>
+                norti<span>v8</span>
+              </strong>
+              <small>Outdoor Footwear</small>
             </span>
           </button>
 
@@ -496,9 +511,6 @@ function App() {
 
                   <article className="hero-panel hero-right">
                     <img src={hero.rightImage} alt={`${hero.title} lifestyle`} />
-                    <div className="hero-floating-card">
-                      <span>{hero.body}</span>
-                    </div>
                   </article>
                 </div>
 
@@ -537,11 +549,10 @@ function App() {
               <section className="content-section">
                 <div className="section-head">
                   <div>
-                    <p className="label">CATEGORY & LATEST</p>
                     <h2>CATEGORY & LATEST</h2>
                   </div>
                   <button type="button" className="ghost-btn light">
-                    View All
+                    SHOP ALL
                   </button>
                 </div>
 
@@ -566,11 +577,10 @@ function App() {
               </section>
 
               <section className="story-grid">
-                {storyCards.map((story, index) => (
+                {storyCards.map((story) => (
                   <article className="story-card" key={story.title}>
                     <img src={story.image} alt={story.title} />
                     <div className="story-copy">
-                      <p className="label">{index === 0 ? 'EDITORIAL DROP' : 'SYSTEM DETAIL'}</p>
                       <h3>{story.title}</h3>
                       <p>{story.body}</p>
                       <button type="button" className="primary-btn">
@@ -585,19 +595,19 @@ function App() {
                 <div className="membership-copy">
                   <p className="label">MEMBERSHIP</p>
                   <h2>Join for up to 20% off.</h2>
-                  <p>
-                    Member-exclusive styles, faster access to drops, and a cleaner signup panel with subtle translucent controls.
-                  </p>
+                  <p>Member perks, early access, and a cleaner rewards block closer to the reference flow.</p>
                 </div>
 
-                <div className="membership-form">
-                  <label>
-                    <span>Enter Email</span>
-                    <input type="email" placeholder="you@brand.com" />
-                  </label>
-                  <button type="button" className="primary-btn">
-                    Sign Up Now
-                  </button>
+                <div className="membership-offers">
+                  {membershipOffers.map((offer) => (
+                    <article key={offer.title} className="membership-offer">
+                      <h3>{offer.title}</h3>
+                      <p>{offer.body}</p>
+                      <button type="button" className="ghost-btn compact">
+                        {offer.cta}
+                      </button>
+                    </article>
+                  ))}
                 </div>
               </section>
 
@@ -608,7 +618,7 @@ function App() {
                     <h2>Top picks for this season.</h2>
                   </div>
                   <button type="button" className="ghost-btn light">
-                    Filter
+                    SHOP MORE
                   </button>
                 </div>
 
@@ -664,7 +674,7 @@ function App() {
               <section className="content-section">
                 <div className="section-head">
                   <div>
-                    <p className="label">AETHER8 BLOG</p>
+                    <p className="label">FIELD NOTES</p>
                     <h2>Field notes and footwear guides.</h2>
                   </div>
                 </div>
@@ -689,15 +699,15 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">FOLLOW US</p>
-                    <h2>FOLLOW US @AETHER8 SHOES</h2>
+                    <h2>FOLLOW US @NORTIV8 SHOES</h2>
                   </div>
                 </div>
 
                 <div className="social-grid">
                   {socialGallery.map((item) => (
                     <article key={item.id} className="social-card">
-                      <img src={item.image} alt={`AetherX social ${item.id}`} />
-                      <span>@AetherX</span>
+                      <img src={item.image} alt={`Nortiv8 social ${item.id}`} />
+                      <span>@NORTIV 8</span>
                     </article>
                   ))}
                 </div>
