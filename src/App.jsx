@@ -340,6 +340,7 @@ const products = [
 
 const blogPosts = [
   {
+    tag: 'CAMPING GUIDE',
     title: '6 Best Shoes For Camping',
     body: 'Comfort, traction, and weather-ready support for long days outdoors.',
     image: imageUrl(
@@ -348,6 +349,7 @@ const blogPosts = [
     ),
   },
   {
+    tag: 'FIT GUIDE',
     title: 'How To Choose Hiking Boots',
     body: 'What to look for in weight, protection, waterproofing, and grip.',
     image: imageUrl(
@@ -356,6 +358,7 @@ const blogPosts = [
     ),
   },
   {
+    tag: 'TACTICAL EDIT',
     title: '7 Black Tactical Boots For Men',
     body: 'Extra protection, comfort, and durability for hard-use situations.',
     image: imageUrl(
@@ -365,13 +368,62 @@ const blogPosts = [
   },
 ]
 
-const socialGallery = Array.from({ length: 6 }, (_, index) => ({
-  id: index + 1,
-  image: imageUrl(
-    `premium footwear social media lifestyle image ${index + 1}, outdoor shoes in elevated editorial scene, stylish adventure fashion, high end retail photography`,
-    'square',
-  ),
-}))
+const socialGallery = [
+  {
+    id: 1,
+    handle: '@NORTIV8',
+    caption: 'Trail crew',
+    image: imageUrl(
+      'premium footwear social media lifestyle image 1, outdoor shoes in elevated editorial scene, stylish adventure fashion, high end retail photography',
+      'square',
+    ),
+  },
+  {
+    id: 2,
+    handle: '@NORTIV8',
+    caption: 'Camp tested',
+    image: imageUrl(
+      'premium footwear social media lifestyle image 2, outdoor shoes in elevated editorial scene, stylish adventure fashion, high end retail photography',
+      'square',
+    ),
+  },
+  {
+    id: 3,
+    handle: '@NORTIV8',
+    caption: 'Daily miles',
+    image: imageUrl(
+      'premium footwear social media lifestyle image 3, outdoor shoes in elevated editorial scene, stylish adventure fashion, high end retail photography',
+      'square',
+    ),
+  },
+  {
+    id: 4,
+    handle: '@NORTIV8',
+    caption: 'Field ready',
+    image: imageUrl(
+      'premium footwear social media lifestyle image 4, outdoor shoes in elevated editorial scene, stylish adventure fashion, high end retail photography',
+      'square',
+    ),
+  },
+  {
+    id: 5,
+    handle: '@NORTIV8',
+    caption: 'Weekend hike',
+    image: imageUrl(
+      'premium footwear social media lifestyle image 5, outdoor shoes in elevated editorial scene, stylish adventure fashion, high end retail photography',
+      'square',
+    ),
+  },
+  {
+    id: 6,
+    handle: '@NORTIV8',
+    caption: 'New drop',
+    image: imageUrl(
+      'premium footwear social media lifestyle image 6, outdoor shoes in elevated editorial scene, stylish adventure fashion, high end retail photography',
+      'square',
+    ),
+  },
+]
 
 const navItems = ['EARLY BIRD OFFER', 'HOT PICKS', 'MEN', 'WOMEN', 'ABOUT US', 'ALLSWIFT']
 
@@ -815,6 +867,7 @@ function App() {
                     <article key={post.title} className="journal-card">
                       <SmartImage src={post.image} alt={post.title} variant="editorial" />
                       <div className="journal-copy">
+                        <span>{post.tag}</span>
                         <h3>{post.title}</h3>
                         <p>{post.body}</p>
                         <button type="button" className="text-link">
@@ -831,6 +884,7 @@ function App() {
                   <div>
                     <p className="label">FOLLOW US</p>
                     <h2>Follow @NORTIV8</h2>
+                    <p>Tag us for a chance to be featured in the next drop recap.</p>
                   </div>
                 </div>
 
@@ -842,7 +896,10 @@ function App() {
                         alt={`Nortiv8 social ${item.id}`}
                         variant="social"
                       />
-                      <span>@NORTIV 8</span>
+                      <div className="social-meta">
+                        <strong>{item.handle}</strong>
+                        <span>{item.caption}</span>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -1020,9 +1077,16 @@ function App() {
         </main>
 
         <footer className="site-footer">
-          <div>
+          <div className="footer-newsletter">
             <p className="label">JOIN OUR MAILING LIST</p>
             <h3>Get first access to new drops and exclusive offers.</h3>
+            <div className="newsletter-form">
+              <input type="email" placeholder="Enter your email" aria-label="Email address" />
+              <button type="button" className="primary-btn">
+                SIGN UP
+              </button>
+            </div>
+            <p className="newsletter-note">Weekly product picks, launch reminders, and members-only offers.</p>
           </div>
           <div className="footer-columns">
             <div>
