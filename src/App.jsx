@@ -9,36 +9,48 @@ const heroSlides = [
   {
     id: 1,
     eyebrow: 'EARLY BIRD OFFER',
-    title: 'Aether Ridge',
-    subtitle: 'Alpine Motion Collection',
-    body: '把 NORTIV8 式户外电商首页骨架，升级成更轻、更透、更立体的 iOS 风格购物首页。',
+    title: 'GEOPILOT WORKNANO STEP',
+    subtitle: 'KEEPS HIGH-STEP WORKERS STEADY, CUSHIONED, AND PROTECTED THROUGH LONG SHIFTS.',
+    body: 'Early bird offer. Built for hard floors, long hours, and all-day support.',
     cta: 'Shop Now',
-    image: imageUrl(
-      'luxury outdoor footwear ecommerce hero, three premium hiking boots and trail shoes arranged on wet reflective stone, silver blue lighting, glassy atmosphere, premium campaign photography, no text',
+    leftImage: imageUrl(
+      'premium rugged work boot closeup on workshop floor, black and orange safety boot product photo, gritty garage lighting, ecommerce campaign, no text',
+      'landscape_16_9',
+    ),
+    rightImage: imageUrl(
+      'mechanic sitting in auto repair shop tying rugged work boots, premium editorial workwear campaign, warm industrial lighting, no text',
       'landscape_16_9',
     ),
   },
   {
     id: 2,
     eyebrow: 'HOT PICKS',
-    title: 'Urban Traverse',
-    subtitle: 'City to Summit',
-    body: '从城市通勤到轻徒步，透明卡片和浮层导航让大促、分类和搜索更轻盈。',
-    cta: 'Browse Drop',
-    image: imageUrl(
-      'premium lifestyle hiking sneaker campaign, two fashion outdoor shoes on modern translucent acrylic platform, soft daylight, high end ecommerce editorial image, no text',
+    title: 'CITY HIKE ESSENTIALS',
+    subtitle: 'LIGHTWEIGHT TRACTION FOR WEEKEND TRAILS, DAILY COMMUTES, AND SUMMER ESCAPES.',
+    body: 'Explore trail-ready shoes with a cleaner iOS-like interface layered onto a familiar commerce skeleton.',
+    cta: 'Explore Now',
+    leftImage: imageUrl(
+      'premium hiking shoe closeup on rock surface, black and tan outdoor sneaker product campaign, crisp daylight, no text',
+      'landscape_16_9',
+    ),
+    rightImage: imageUrl(
+      'woman and man walking outdoors in premium hiking shoes, modern adventure fashion editorial, bright summer day, no text',
       'landscape_16_9',
     ),
   },
   {
     id: 3,
     eyebrow: 'ALL TERRAIN',
-    title: 'Worknova',
-    subtitle: 'Performance Utility',
-    body: '保留强商品导购能力，同时用液态玻璃、半透明模糊和多层阴影做出系统级质感。',
+    title: 'FIELD READY TACTICAL',
+    subtitle: 'STABLE, LIGHTWEIGHT, AND READY FOR FAST MOVEMENT ACROSS MIXED TERRAIN.',
+    body: 'A more faithful nortiv8-style homepage rhythm, refined with restrained translucent UI touches.',
     cta: 'View Collection',
-    image: imageUrl(
-      'premium work boot campaign image, rugged brown and black boots on translucent layered glass pedestal, cinematic silver gradient background, highly detailed ecommerce hero, no text',
+    leftImage: imageUrl(
+      'premium tactical boot product photo on dark textured surface, black outdoor boot with subtle orange accents, no text',
+      'landscape_16_9',
+    ),
+    rightImage: imageUrl(
+      'man outdoors crouching in tactical boots on rocky terrain, premium rugged footwear lifestyle campaign, no text',
       'landscape_16_9',
     ),
   },
@@ -301,7 +313,7 @@ function ArrowIcon({ direction = 'right' }) {
 
 function App() {
   const [activeView, setActiveView] = useState('home')
-  const [activeSlide, setActiveSlide] = useState(1)
+  const [activeSlide, setActiveSlide] = useState(0)
   const [selectedProductId, setSelectedProductId] = useState(products[1].id)
   const [selectedSize, setSelectedSize] = useState('42')
   const [selectedColor, setSelectedColor] = useState(products[1].colors[0])
@@ -406,22 +418,23 @@ function App() {
 
   return (
     <div className="page-shell">
-      <div className="ambient ambient-a" />
-      <div className="ambient ambient-b" />
-      <div className="ambient ambient-c" />
-
       <div className="site-frame">
-        <div className="promo-strip glass-bar">
+        <div className="promo-strip">
           <span>Free shipping on orders over ¥699+</span>
-          <button type="button">USD</button>
+          <button type="button">$ USD</button>
         </div>
 
-        <header className="site-header glass-bar">
+        <header className="site-header">
           <button type="button" className="brand-lockup" onClick={() => setActiveView('home')}>
-            <span className="brand-mark">AX</span>
+            <span className="brand-mark">
+              <svg viewBox="0 0 64 40" aria-hidden="true">
+                <path d="M4 32L15 13l7 11l6-8l12 16H4z" fill="currentColor" opacity="0.88" />
+                <path d="M23 32L34 5l10 16l4-6l13 17H23z" fill="currentColor" />
+              </svg>
+            </span>
             <span className="brand-wording">
-              <strong>AetherX</strong>
-              <small>Outdoor Motion Lab</small>
+              <strong>Aether8</strong>
+              <small>Work. Hiking. Tactical.</small>
             </span>
           </button>
 
@@ -461,53 +474,31 @@ function App() {
           {activeView === 'home' && (
             <>
               <section className="hero-stage">
-                <div className="hero-media">
-                  <img src={hero.image} alt={hero.title} />
-                </div>
-
-                <div className="hero-overlay">
-                  <div className="hero-copy glass-panel strong">
-                    <p>{hero.eyebrow}</p>
-                    <h1>{hero.title}</h1>
-                    <h2>{hero.subtitle}</h2>
-                    <p className="hero-description">{hero.body}</p>
-
-                    <div className="hero-actions">
-                      <button
-                        type="button"
-                        className="primary-btn"
-                        onClick={() => openProduct(products[activeSlide])}
-                      >
-                        {hero.cta}
-                      </button>
-                      <button type="button" className="ghost-btn" onClick={() => setActiveView('home')}>
-                        View Story
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="hero-side-stack">
-                    <div className="glass-panel stat-card">
-                      <span>Collection Focus</span>
-                      <strong>透明立体首页</strong>
-                      <small>结构像 NORTIV8，观感像 iOS 系统级商城。</small>
-                    </div>
-
-                    <div className="glass-panel stat-grid">
-                      <div>
-                        <strong>12.5K+</strong>
-                        <span>五星评价视觉化</span>
-                      </div>
-                      <div>
-                        <strong>48H</strong>
-                        <span>重点城市履约</span>
-                      </div>
-                      <div>
-                        <strong>20%</strong>
-                        <span>会员首购权益</span>
+                <div className="hero-grid">
+                  <article className="hero-panel hero-left">
+                    <img src={hero.leftImage} alt={hero.title} />
+                    <div className="hero-copy">
+                      <p>{hero.eyebrow}</p>
+                      <h1>{hero.title}</h1>
+                      <h2>{hero.subtitle}</h2>
+                      <div className="hero-actions">
+                        <button
+                          type="button"
+                          className="primary-btn"
+                          onClick={() => openProduct(products[activeSlide])}
+                        >
+                          {hero.cta}
+                        </button>
                       </div>
                     </div>
-                  </div>
+                  </article>
+
+                  <article className="hero-panel hero-right">
+                    <img src={hero.rightImage} alt={`${hero.title} lifestyle`} />
+                    <div className="hero-floating-card">
+                      <span>{hero.body}</span>
+                    </div>
+                  </article>
                 </div>
 
                 <div className="hero-controls">
@@ -515,7 +506,7 @@ function App() {
                     <ArrowIcon direction="left" />
                   </button>
 
-                  <div className="hero-dots glass-panel">
+                  <div className="hero-dots">
                     {heroSlides.map((slide, index) => (
                       <button
                         key={slide.id}
@@ -533,7 +524,7 @@ function App() {
                 </div>
               </section>
 
-              <section className="press-strip glass-ribbon">
+              <section className="press-strip">
                 {pressMentions.map((item) => (
                   <article key={item.outlet}>
                     <strong>{item.outlet}</strong>
@@ -546,16 +537,16 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">CATEGORY & LATEST</p>
-                    <h2>保留参考站的分类导购节奏，但换成更轻的玻璃陈列。</h2>
+                    <h2>Built for work, tactical, and hiking.</h2>
                   </div>
-                  <button type="button" className="ghost-btn">
+                  <button type="button" className="ghost-btn light">
                     View All
                   </button>
                 </div>
 
                 <div className="category-grid">
                   {categories.map((category, index) => (
-                    <article className="category-card glass-panel" key={category.title}>
+                    <article className="category-card" key={category.title}>
                       <img src={category.image} alt={category.title} />
                       <div className="category-copy">
                         <span>{category.caption}</span>
@@ -575,7 +566,7 @@ function App() {
 
               <section className="story-grid">
                 {storyCards.map((story, index) => (
-                  <article className="story-card glass-panel" key={story.title}>
+                  <article className="story-card" key={story.title}>
                     <img src={story.image} alt={story.title} />
                     <div className="story-copy">
                       <p className="label">{index === 0 ? 'EDITORIAL DROP' : 'SYSTEM DETAIL'}</p>
@@ -589,12 +580,12 @@ function App() {
                 ))}
               </section>
 
-              <section className="membership-card glass-panel">
+              <section className="membership-card">
                 <div className="membership-copy">
                   <p className="label">MEMBERSHIP</p>
-                  <h2>加入会员，首单最高减 20%</h2>
+                  <h2>Join for up to 20% off.</h2>
                   <p>
-                    这块对应 `nortiv8.com` 的会员权益区域，但用悬浮玻璃卡、柔和高光和圆角输入框重做。
+                    Member-exclusive styles, faster access to drops, and a cleaner signup panel with subtle translucent controls.
                   </p>
                 </div>
 
@@ -613,16 +604,16 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">HOT PICKS</p>
-                    <h2>商品流从传统卡片，升级成带深度感的半透明货架。</h2>
+                    <h2>Hot picks for this season.</h2>
                   </div>
-                  <button type="button" className="ghost-btn">
+                  <button type="button" className="ghost-btn light">
                     Filter
                   </button>
                 </div>
 
                 <div className="product-grid new-grid">
                   {products.map((product) => (
-                    <article className="product-card glass-panel" key={product.id}>
+                    <article className="product-card" key={product.id}>
                       <div className="product-image-shell">
                         <img src={product.image} alt={product.name} />
                         <button type="button" className="floating-badge">
@@ -673,13 +664,13 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">AETHERX JOURNAL</p>
-                    <h2>延续参考站的 Blog 区，但视觉更像品牌杂志和系统卡片的结合。</h2>
+                    <h2>Field notes and footwear guides.</h2>
                   </div>
                 </div>
 
                 <div className="journal-grid">
                   {blogPosts.map((post) => (
-                    <article key={post.title} className="journal-card glass-panel">
+                    <article key={post.title} className="journal-card">
                       <img src={post.image} alt={post.title} />
                       <div className="journal-copy">
                         <h3>{post.title}</h3>
@@ -697,13 +688,13 @@ function App() {
                 <div className="section-head">
                   <div>
                     <p className="label">FOLLOW US</p>
-                    <h2>社媒宫格保留，但统一在透明边框和柔光背景里。</h2>
+                    <h2>Follow us @Aether8 shoes.</h2>
                   </div>
                 </div>
 
                 <div className="social-grid">
                   {socialGallery.map((item) => (
-                    <article key={item.id} className="social-card glass-panel">
+                    <article key={item.id} className="social-card">
                       <img src={item.image} alt={`AetherX social ${item.id}`} />
                       <span>@AetherX</span>
                     </article>
@@ -715,7 +706,7 @@ function App() {
 
           {activeView === 'detail' && (
             <section className="detail-layout">
-              <div className="detail-gallery glass-panel">
+              <div className="detail-gallery">
                 <img src={selectedProduct.image} alt={selectedProduct.name} />
                 <div className="thumbnail-row">
                   {products.map((product) => (
@@ -738,7 +729,7 @@ function App() {
                 </div>
               </div>
 
-              <div className="detail-info glass-panel">
+              <div className="detail-info">
                 <p className="label">{selectedProduct.category}</p>
                 <h2>{selectedProduct.name}</h2>
                 <div className="detail-price-row">
@@ -808,7 +799,7 @@ function App() {
 
           {activeView === 'cart' && (
             <section className="cart-layout">
-              <div className="cart-list glass-panel">
+              <div className="cart-list">
                 <p className="label">SHOPPING BAG</p>
                 <h2>Ready for checkout</h2>
 
@@ -848,7 +839,7 @@ function App() {
                 ))}
               </div>
 
-              <aside className="checkout-card glass-panel">
+              <aside className="checkout-card">
                 <p className="label">SUMMARY</p>
                 <h2>Order overview</h2>
                 <div className="summary-row">
@@ -878,7 +869,7 @@ function App() {
           )}
         </main>
 
-        <footer className="site-footer glass-panel">
+        <footer className="site-footer">
           <div>
             <p className="label">JOIN OUR MAILING LIST</p>
             <h3>把户外电商做得更像品牌系统，而不是普通模板。</h3>
