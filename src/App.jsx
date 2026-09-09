@@ -262,6 +262,8 @@ const storyCards = [
   },
 ]
 
+const categoryRail = ['WORKING', 'TACTICAL', 'HIKING', 'HIKING SUMMER', 'MEN', 'WOMEN']
+
 const membershipOffers = [
   {
     title: 'SAVE UP TO 20% OFF',
@@ -737,9 +739,14 @@ function App() {
                   <div>
                     <h2>CATEGORY & LATEST</h2>
                   </div>
-                  <button type="button" className="ghost-btn light">
-                    SHOP ALL
-                  </button>
+                </div>
+
+                <div className="category-rail" aria-label="分类快捷入口">
+                  {categoryRail.map((item) => (
+                    <button key={item} type="button" className="category-chip" onClick={() => setActiveView('home')}>
+                      {item}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="category-grid">
