@@ -428,8 +428,8 @@ img {
 .press-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  padding: 20px 20px 24px;
+  gap: 8px;
+  padding: 16px 20px 18px;
   background: #b40f11;
 }
 
@@ -440,21 +440,21 @@ img {
 .press-strip strong {
   display: block;
   color: white;
-  font-size: clamp(1.1rem, 2vw, 1.8rem);
+  font-size: clamp(1rem, 1.8vw, 1.55rem);
   letter-spacing: -0.05em;
 }
 
 .press-strip p {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: rgba(255, 255, 255, 0.92);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .content-section {
   display: grid;
   gap: 20px;
-  padding: 82px 22px 0;
+  padding: 70px 22px 0;
 }
 
 .section-head,
@@ -556,7 +556,7 @@ img {
 .story-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: 18px;
 }
 
 .story-card,
@@ -583,6 +583,13 @@ img {
 .story-copy p {
   margin: 10px 0 0;
   max-width: 34ch;
+}
+
+.story-copy .primary-btn,
+.membership-offer .ghost-btn.compact {
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 13px;
 }
 
 .membership-card {
@@ -619,6 +626,7 @@ img {
   margin: 0;
   color: var(--muted);
   line-height: 1.6;
+  max-width: 28ch;
 }
 
 .new-grid {
@@ -931,14 +939,15 @@ img {
 .site-footer {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   margin-top: 28px;
-  padding-top: 40px;
+  padding-top: 34px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .site-footer h3 {
   margin-top: 12px;
-  max-width: 18ch;
-  font-size: clamp(2rem, 4vw, 3.4rem);
-  line-height: 0.98;
+  max-width: 16ch;
+  font-size: clamp(1.9rem, 3.6vw, 3rem);
+  line-height: 1;
 }
 
 .footer-columns {

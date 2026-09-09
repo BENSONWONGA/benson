@@ -868,7 +868,7 @@ function App() {
 
                 <div className="checkout-benefits">
                   <span>7 天无忧退换</span>
-                  <span>透明立体式购物袋 UI</span>
+                  <span>Member perks available</span>
                   <span>满 ¥699 包邮</span>
                 </div>
 
@@ -883,7 +883,7 @@ function App() {
         <footer className="site-footer">
           <div>
             <p className="label">JOIN OUR MAILING LIST</p>
-            <h3>把户外电商做得更像品牌系统，而不是普通模板。</h3>
+            <h3>Get first access to new drops, rewards, and seasonal offers.</h3>
           </div>
           <div className="footer-columns">
             <div>
