@@ -64,6 +64,11 @@ create table if not exists public.orders (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+alter table public.orders add column if not exists shipping_carrier text;
+alter table public.orders add column if not exists tracking_number text;
+alter table public.orders add column if not exists shipped_at timestamptz;
+alter table public.orders add column if not exists fulfilled_at timestamptz;
+
 create table if not exists public.order_items (
   id uuid primary key default gen_random_uuid(),
   order_id uuid not null references public.orders(id) on delete cascade,
@@ -83,6 +88,7 @@ create index if not exists idx_products_active on public.products (is_active, ca
 create index if not exists idx_product_variants_product_stock on public.product_variants (product_id, stock_quantity desc);
 create index if not exists idx_orders_user_created on public.orders (user_id, created_at desc);
 create index if not exists idx_orders_status_created on public.orders (status, created_at desc);
+create index if not exists idx_orders_tracking_number on public.orders (tracking_number) where tracking_number is not null;
 create index if not exists idx_order_items_order on public.order_items (order_id);
 
 create or replace function public.touch_updated_at()

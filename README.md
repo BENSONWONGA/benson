@@ -50,6 +50,7 @@ npm run dev
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `SUPABASE_STORAGE_BUCKET`（可选，默认 `product-media`）
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `SITE_URL`
@@ -79,12 +80,14 @@ npm run dev
 - `GET /api/admin/orders`
 - `GET /api/admin/products`
 - `POST /api/admin/products`
+- `POST /api/admin/media/upload`
 
 说明：
 
 - 下单接口会基于数据库中的商品和变体重新校验价格与库存
 - 支付采用 Stripe Checkout Sessions
 - 订单支付结果通过 Stripe Webhook 回写 Supabase
+- 商品图上传会使用 Supabase Storage；接口首次上传时会自动创建公开 bucket
 
 ## 部署到服务器
 
@@ -111,7 +114,9 @@ https://你的域名/api/stripe/webhook
 - 商品数据可从数据库读取
 - 购物车可创建 Stripe Checkout Session
 - 支付完成后订单可通过 webhook 更新
-- 后台 API 已准备好给管理界面接入
+- 会员登录 / 注册与订单中心
+- 管理后台商品、变体、库存、订单、物流维护
+- 商品上下架与商品图上传能力
 
 下一步最建议继续补齐：
 

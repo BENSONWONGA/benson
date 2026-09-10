@@ -112,3 +112,11 @@ export async function updateAdminVariant(variantId, payload, accessToken) {
     accessToken,
   })
 }
+
+export async function uploadAdminProductImage(payload, accessToken) {
+  return request('/api/admin/media/upload', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    accessToken,
+  })
+}

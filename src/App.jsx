@@ -8,6 +8,7 @@ import {
   fetchAdminOrders,
   fetchAdminProducts,
   fetchProducts,
+  uploadAdminProductImage,
   updateAdminOrder,
   updateAdminProduct,
   updateAdminVariant,
@@ -536,6 +537,35 @@ function formatDate(value) {
   })
 }
 
+function formatDateTimeLocalValue(value) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  const pad = (item) => String(item).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours(),
+  )}:${pad(date.getMinutes())}`
+}
+
+function toIsoDateTime(value) {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  return date.toISOString()
+}
+
 function toAdminProductForm(product) {
   return {
     frontend_key: String(product.id ?? ''),
@@ -561,6 +591,15 @@ function toAdminVariantForm(variant) {
     stock_quantity: String(variant?.stock_quantity ?? 0),
     stripe_price_id: variant?.stripe_price_id ?? '',
   }
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(new Error('图片读取失败，请重新选择文件。'))
+    reader.readAsDataURL(file)
+  })
 }
 
 function SearchIcon() {
@@ -673,6 +712,7 @@ function App() {
   const [adminProductForm, setAdminProductForm] = useState(emptyAdminProductForm)
   const [adminEditingProductId, setAdminEditingProductId] = useState('')
   const [adminProductSaving, setAdminProductSaving] = useState(false)
+  const [adminImageUploading, setAdminImageUploading] = useState(false)
   const [adminVariantForm, setAdminVariantForm] = useState(emptyAdminVariantForm)
   const [adminEditingVariantId, setAdminEditingVariantId] = useState('')
   const [adminVariantSaving, setAdminVariantSaving] = useState(false)
@@ -913,6 +953,10 @@ function App() {
                 status: item.status,
                 payment_status: item.payment_status,
                 notes: item.notes ?? '',
+                shipping_carrier: item.shipping_carrier ?? '',
+                tracking_number: item.tracking_number ?? '',
+                shipped_at: formatDateTimeLocalValue(item.shipped_at),
+                fulfilled_at: formatDateTimeLocalValue(item.fulfilled_at),
               },
             ]),
           ),
@@ -1119,6 +1163,55 @@ function App() {
     }))
   }
 
+  const handleAdminImageUpload = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) {
+      return
+    }
+
+    if (!accessToken) {
+      setAdminFeedback('当前没有管理员会话，无法上传图片。')
+      return
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setAdminFeedback('仅支持 JPG、PNG 或 WEBP 图片。')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAdminFeedback('图片大小不能超过 5MB。')
+      return
+    }
+
+    try {
+      setAdminImageUploading(true)
+      setAdminFeedback('')
+
+      const dataUrl = await fileToDataUrl(file)
+      const payload = await uploadAdminProductImage(
+        {
+          fileName: file.name,
+          contentType: file.type,
+          dataUrl,
+        },
+        accessToken,
+      )
+
+      setAdminProductForm((current) => ({
+        ...current,
+        image_url: payload.url || '',
+      }))
+      setAdminFeedback('商品图片已上传，保存商品后即可正式生效。')
+    } catch (error) {
+      setAdminFeedback(error.message || '商品图片上传失败。')
+    } finally {
+      setAdminImageUploading(false)
+    }
+  }
+
   const resetAdminProductEditor = () => {
     setAdminEditingProductId('')
     setAdminProductForm(emptyAdminProductForm)
@@ -1172,6 +1265,10 @@ function App() {
             status: item.status,
             payment_status: item.payment_status,
             notes: item.notes ?? '',
+            shipping_carrier: item.shipping_carrier ?? '',
+            tracking_number: item.tracking_number ?? '',
+            shipped_at: formatDateTimeLocalValue(item.shipped_at),
+            fulfilled_at: formatDateTimeLocalValue(item.fulfilled_at),
           },
         ]),
       ),
@@ -1266,6 +1363,10 @@ function App() {
         status: current[orderId]?.status || 'pending',
         payment_status: current[orderId]?.payment_status || 'pending',
         notes: current[orderId]?.notes || '',
+        shipping_carrier: current[orderId]?.shipping_carrier || '',
+        tracking_number: current[orderId]?.tracking_number || '',
+        shipped_at: current[orderId]?.shipped_at || '',
+        fulfilled_at: current[orderId]?.fulfilled_at || '',
         ...current[orderId],
         [field]: value,
       },
@@ -1288,6 +1389,10 @@ function App() {
           status: draft?.status,
           payment_status: draft?.payment_status,
           notes: draft?.notes?.trim() || null,
+          shipping_carrier: draft?.shipping_carrier?.trim() || null,
+          tracking_number: draft?.tracking_number?.trim() || null,
+          shipped_at: toIsoDateTime(draft?.shipped_at),
+          fulfilled_at: toIsoDateTime(draft?.fulfilled_at),
         },
         accessToken,
       )
@@ -1318,6 +1423,16 @@ function App() {
           status: nextStatus,
           payment_status: nextPaymentStatus,
           notes: adminOrderDrafts[orderId]?.notes?.trim() || null,
+          shipping_carrier: adminOrderDrafts[orderId]?.shipping_carrier?.trim() || null,
+          tracking_number: adminOrderDrafts[orderId]?.tracking_number?.trim() || null,
+          shipped_at:
+            nextStatus === 'fulfilled'
+              ? toIsoDateTime(adminOrderDrafts[orderId]?.shipped_at) || new Date().toISOString()
+              : toIsoDateTime(adminOrderDrafts[orderId]?.shipped_at),
+          fulfilled_at:
+            nextStatus === 'fulfilled'
+              ? toIsoDateTime(adminOrderDrafts[orderId]?.fulfilled_at) || new Date().toISOString()
+              : toIsoDateTime(adminOrderDrafts[orderId]?.fulfilled_at),
         },
         accessToken,
       )
@@ -1327,6 +1442,28 @@ function App() {
       setAdminFeedback(error.message || '订单快捷操作失败。')
     } finally {
       setAdminOrderSavingId('')
+    }
+  }
+
+  const handleAdminProductToggle = async (product) => {
+    if (!accessToken) {
+      setAdminFeedback('当前没有管理员会话，无法更新商品状态。')
+      return
+    }
+
+    try {
+      setAdminFeedback('')
+      await updateAdminProduct(
+        product.dbId,
+        {
+          is_active: !product.is_active,
+        },
+        accessToken,
+      )
+      await reloadAdminProductsAndCatalog()
+      setAdminFeedback(product.is_active ? '商品已下架。' : '商品已上架。')
+    } catch (error) {
+      setAdminFeedback(error.message || '商品状态更新失败。')
     }
   }
 
@@ -2006,6 +2143,13 @@ function App() {
                           <span>Total</span>
                           <strong>{formatPriceFromCents(order.total)}</strong>
                         </div>
+                        {(order.shipping_carrier || order.tracking_number || order.shipped_at) && (
+                          <div className="shipping-meta">
+                            {order.shipping_carrier && <span>物流: {order.shipping_carrier}</span>}
+                            {order.tracking_number && <span>单号: {order.tracking_number}</span>}
+                            {order.shipped_at && <span>发货: {formatDate(order.shipped_at)}</span>}
+                          </div>
+                        )}
                       </article>
                     ))}
                   </div>
@@ -2149,15 +2293,54 @@ function App() {
                             placeholder="Vibram Lite"
                           />
                         </label>
-                        <label className="checkout-input admin-span-2">
-                          <span>Image URL</span>
-                          <input
-                            type="url"
-                            value={adminProductForm.image_url}
-                            onChange={(event) => handleAdminProductFieldChange('image_url', event.target.value)}
-                            placeholder="https://..."
-                          />
-                        </label>
+                        <div className="admin-media-panel admin-span-2">
+                          <div className="admin-media-toolbar">
+                            <div>
+                              <span className="admin-media-label">Product Image</span>
+                              <p>支持 JPG / PNG / WEBP，单张不超过 5MB，上传后会自动回填图片链接。</p>
+                            </div>
+                            <div className="admin-media-actions">
+                              <label
+                                className={`ghost-btn compact upload-trigger${adminImageUploading ? ' disabled' : ''}`}
+                              >
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp"
+                                  onChange={handleAdminImageUpload}
+                                  disabled={adminImageUploading}
+                                />
+                                {adminImageUploading ? 'Uploading...' : 'Upload Image'}
+                              </label>
+                              {adminProductForm.image_url && (
+                                <button
+                                  type="button"
+                                  className="ghost-btn compact"
+                                  onClick={() => handleAdminProductFieldChange('image_url', '')}
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <label className="checkout-input">
+                            <span>Image URL</span>
+                            <input
+                              type="url"
+                              value={adminProductForm.image_url}
+                              onChange={(event) => handleAdminProductFieldChange('image_url', event.target.value)}
+                              placeholder="https://..."
+                            />
+                          </label>
+                          {adminProductForm.image_url && (
+                            <div className="admin-media-preview">
+                              <SmartImage
+                                src={adminProductForm.image_url}
+                                alt={adminProductForm.name || 'Product preview'}
+                                variant="product"
+                              />
+                            </div>
+                          )}
+                        </div>
                         <label className="checkout-input admin-span-2">
                           <span>Detail</span>
                           <textarea
@@ -2331,6 +2514,13 @@ function App() {
                               <button
                                 type="button"
                                 className="ghost-btn compact"
+                                onClick={() => handleAdminProductToggle(product)}
+                              >
+                                {product.is_active ? 'Unpublish' : 'Publish'}
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-btn compact"
                                 onClick={() => handleEditAdminProduct(product)}
                               >
                                 Edit
@@ -2392,6 +2582,48 @@ function App() {
                                     handleAdminOrderDraftChange(order.id, 'notes', event.target.value)
                                   }
                                   placeholder="Internal order notes"
+                                />
+                              </label>
+                              <label className="checkout-input">
+                                <span>Shipping Carrier</span>
+                                <input
+                                  type="text"
+                                  value={adminOrderDrafts[order.id]?.shipping_carrier ?? ''}
+                                  onChange={(event) =>
+                                    handleAdminOrderDraftChange(order.id, 'shipping_carrier', event.target.value)
+                                  }
+                                  placeholder="DHL / SF / UPS"
+                                />
+                              </label>
+                              <label className="checkout-input">
+                                <span>Tracking Number</span>
+                                <input
+                                  type="text"
+                                  value={adminOrderDrafts[order.id]?.tracking_number ?? ''}
+                                  onChange={(event) =>
+                                    handleAdminOrderDraftChange(order.id, 'tracking_number', event.target.value)
+                                  }
+                                  placeholder="Tracking no."
+                                />
+                              </label>
+                              <label className="checkout-input">
+                                <span>Shipped At</span>
+                                <input
+                                  type="datetime-local"
+                                  value={adminOrderDrafts[order.id]?.shipped_at ?? ''}
+                                  onChange={(event) =>
+                                    handleAdminOrderDraftChange(order.id, 'shipped_at', event.target.value)
+                                  }
+                                />
+                              </label>
+                              <label className="checkout-input">
+                                <span>Fulfilled At</span>
+                                <input
+                                  type="datetime-local"
+                                  value={adminOrderDrafts[order.id]?.fulfilled_at ?? ''}
+                                  onChange={(event) =>
+                                    handleAdminOrderDraftChange(order.id, 'fulfilled_at', event.target.value)
+                                  }
                                 />
                               </label>
                             </div>

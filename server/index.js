@@ -6,6 +6,7 @@ import Stripe from 'stripe'
 import { z } from 'zod'
 import fs from 'node:fs'
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
 dotenv.config()
@@ -19,7 +20,13 @@ const indexFile = path.join(distDir, 'index.html')
 const app = express()
 const port = Number(process.env.PORT || 3000)
 const siteUrl = process.env.SITE_URL || 'http://localhost:5173'
+const storageBucket = process.env.SUPABASE_STORAGE_BUCKET || 'product-media'
 const rawCorsOrigins = process.env.CORS_ORIGIN?.split(',').map((item) => item.trim()).filter(Boolean)
+const supportedImageTypes = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}
 
 const supabase =
   process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -74,6 +81,10 @@ const adminOrderUpdateSchema = z
     status: z.enum(['pending', 'paid', 'cancelled', 'fulfilled']).optional(),
     payment_status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional(),
     notes: z.string().max(1000).optional().nullable(),
+    shipping_carrier: z.string().max(120).optional().nullable(),
+    tracking_number: z.string().max(120).optional().nullable(),
+    shipped_at: z.string().datetime().optional().nullable(),
+    fulfilled_at: z.string().datetime().optional().nullable(),
   })
   .refine((value) => Object.keys(value).length > 0, 'At least one order field is required')
 
@@ -89,6 +100,14 @@ const adminVariantSchema = z.object({
 const adminVariantUpdateSchema = adminVariantSchema
   .partial()
   .refine((value) => Object.keys(value).length > 0, 'At least one variant field is required')
+
+const adminMediaUploadSchema = z.object({
+  fileName: z.string().min(1).max(200),
+  contentType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+  dataUrl: z.string().min(50),
+})
+
+let storageBucketReadyPromise = null
 
 function corsOrigin(origin, callback) {
   if (!origin || !rawCorsOrigins?.length || rawCorsOrigins.includes(origin)) {
@@ -189,6 +208,58 @@ function normalizeProducts(rows) {
   }))
 }
 
+async function ensureStorageBucket() {
+  assertService('Supabase', supabase)
+
+  if (!storageBucketReadyPromise) {
+    storageBucketReadyPromise = (async () => {
+      const { data, error } = await supabase.storage.listBuckets()
+      if (error) {
+        throw error
+      }
+
+      const exists = data?.some((bucket) => bucket.name === storageBucket)
+      if (exists) {
+        return
+      }
+
+      const { error: createError } = await supabase.storage.createBucket(storageBucket, {
+        public: true,
+        fileSizeLimit: '5MB',
+        allowedMimeTypes: Object.keys(supportedImageTypes),
+      })
+
+      if (createError) {
+        throw createError
+      }
+    })().catch((error) => {
+      storageBucketReadyPromise = null
+      throw error
+    })
+  }
+
+  return storageBucketReadyPromise
+}
+
+function parseDataUrl(dataUrl, contentType) {
+  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl)
+  if (!match) {
+    throw Object.assign(new Error('Invalid image payload'), { statusCode: 400 })
+  }
+
+  const [, declaredType, encoded] = match
+  if (declaredType !== contentType || !(contentType in supportedImageTypes)) {
+    throw Object.assign(new Error('Unsupported image format'), { statusCode: 400 })
+  }
+
+  const buffer = Buffer.from(encoded, 'base64')
+  if (!buffer.length || buffer.length > 5 * 1024 * 1024) {
+    throw Object.assign(new Error('Image must be smaller than 5MB'), { statusCode: 400 })
+  }
+
+  return buffer
+}
+
 app.use(
   cors({
     origin: corsOrigin,
@@ -251,7 +322,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   }
 })
 
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 
 app.get('/api/health', (_request, response) => {
   response.json({
@@ -356,10 +427,13 @@ app.get('/api/account/orders', async (request, response) => {
           customer_email,
           status,
           payment_status,
+          shipping_carrier,
+          tracking_number,
+          shipped_at,
+          fulfilled_at,
           subtotal,
           shipping,
           total,
-          notes,
           created_at,
           order_items (
             product_name,
@@ -559,10 +633,19 @@ app.get('/api/admin/orders', async (request, response) => {
           customer_email,
           status,
           payment_status,
+          shipping_carrier,
+          tracking_number,
+          shipped_at,
+          fulfilled_at,
           subtotal,
           shipping,
           total,
           created_at,
+          shipping_carrier,
+          tracking_number,
+          shipped_at,
+          fulfilled_at,
+          notes,
           order_items (
             product_name,
             sku,
@@ -691,7 +774,9 @@ app.patch('/api/admin/orders/:orderId', async (request, response) => {
       .from('orders')
       .update(payload)
       .eq('id', orderId)
-      .select('id, status, payment_status, notes, updated_at')
+      .select(
+        'id, status, payment_status, notes, shipping_carrier, tracking_number, shipped_at, fulfilled_at, updated_at',
+      )
       .single()
 
     if (error) {
@@ -754,6 +839,43 @@ app.patch('/api/admin/variants/:variantId', async (request, response) => {
   } catch (error) {
     response.status(error.statusCode || 500).json({
       error: error.message || 'Failed to update product variant',
+    })
+  }
+})
+
+app.post('/api/admin/media/upload', async (request, response) => {
+  try {
+    await requireAdmin(request)
+
+    const payload = adminMediaUploadSchema.parse(request.body)
+    await ensureStorageBucket()
+
+    const buffer = parseDataUrl(payload.dataUrl, payload.contentType)
+    const extension = supportedImageTypes[payload.contentType]
+    const safeName = payload.fileName.replace(/[^a-zA-Z0-9._-]/g, '-')
+    const stem = safeName.replace(/\.[^.]+$/, '') || 'product-image'
+    const filePath = `products/${new Date().toISOString().slice(0, 10)}/${stem}-${randomUUID()}.${extension}`
+
+    const { error } = await supabase.storage.from(storageBucket).upload(filePath, buffer, {
+      contentType: payload.contentType,
+      cacheControl: '3600',
+      upsert: false,
+    })
+
+    if (error) {
+      throw error
+    }
+
+    const { data } = supabase.storage.from(storageBucket).getPublicUrl(filePath)
+
+    response.status(201).json({
+      url: data.publicUrl,
+      bucket: storageBucket,
+      path: filePath,
+    })
+  } catch (error) {
+    response.status(error.statusCode || 500).json({
+      error: error.message || 'Failed to upload product image',
     })
   }
 })
