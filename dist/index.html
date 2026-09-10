@@ -9,6 +9,84 @@
       content="一套更贴近 NORTIV8 风格的鞋类 B2C 首页原型，强调商站结构、产品导购与电商转化。"
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      window.__VISSAR_PRODUCT_FALLBACK__ = {
+        products: [
+          {
+            id: 1,
+            name: 'Aether Ridge GTX',
+            category: 'HIKING BOOTS',
+            price: 899,
+            rating: 4.9,
+            pace: '防水山地',
+            drop: 'Vibram Lite',
+            detail: '面向高频徒步与城市通勤的混合型靴款，兼顾防护、轻量和利落轮廓。',
+            colors: ['冰川银', '玄岩黑', '沙岩灰'],
+            variants: [],
+          },
+          {
+            id: 2,
+            name: 'Urban Traverse Lite',
+            category: 'HIKING SHOES',
+            price: 769,
+            rating: 4.8,
+            pace: '轻徒步 / 通勤',
+            drop: 'Flex Shell',
+            detail: '更适合城市移动与周末短途，鞋型更轻，更符合 iOS 风格页面里的精致表达。',
+            colors: ['雾蓝灰', '星云白', '夜幕黑'],
+            variants: [],
+          },
+          {
+            id: 3,
+            name: 'Worknova Shield',
+            category: 'WORK BOOTS',
+            price: 999,
+            rating: 4.7,
+            pace: '工装稳定',
+            drop: 'Shock Guard',
+            detail: '强调全天稳定与抗冲击表现，适合把功能型鞋款做成更高级的品牌展示。',
+            colors: ['棕褐', '黑曜', '雾卡其'],
+            variants: [],
+          },
+          {
+            id: 4,
+            name: 'Vapor Trail Shell',
+            category: 'MILITARY BOOTS',
+            price: 859,
+            rating: 4.8,
+            pace: '机能训练',
+            drop: 'Grip Core',
+            detail: '更偏机能审美的户外战术靴，用于强化品牌辨识度和男装线条感。',
+            colors: ['曜石黑', '军绿灰', '风暴棕'],
+            variants: [],
+          },
+        ],
+      }
+
+      {
+        const nativeFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          const rawUrl =
+            typeof input === 'string'
+              ? input
+              : input instanceof Request
+                ? input.url
+                : String(input)
+          const url = new URL(rawUrl, window.location.origin)
+
+          if (url.origin === window.location.origin && url.pathname === '/api/products') {
+            return new Response(JSON.stringify(window.__VISSAR_PRODUCT_FALLBACK__), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+              },
+            })
+          }
+
+          return nativeFetch(input, init)
+        }
+      }
+    </script>
     <script type="module" crossorigin src="/assets/index-X7s8SqIh.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-CkGdx30E.css">
   </head>
