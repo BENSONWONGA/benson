@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   createAdminProduct,
+  createAdminVariant,
   createCheckoutSession,
   fetchAccountOrders,
   fetchAccountProfile,
@@ -9,6 +10,7 @@ import {
   fetchProducts,
   updateAdminOrder,
   updateAdminProduct,
+  updateAdminVariant,
 } from './lib/api'
 import { supabase } from './lib/supabase'
 
@@ -459,6 +461,14 @@ const emptyAdminProductForm = {
   image_url: '',
   is_active: true,
 }
+const emptyAdminVariantForm = {
+  sku: '',
+  color: '',
+  size: '',
+  price: '',
+  stock_quantity: '0',
+  stripe_price_id: '',
+}
 
 function uniqueValues(values) {
   return [...new Set(values.filter(Boolean))]
@@ -539,6 +549,17 @@ function toAdminProductForm(product) {
     detail: product.detail ?? '',
     image_url: product.image ?? '',
     is_active: product.is_active ?? true,
+  }
+}
+
+function toAdminVariantForm(variant) {
+  return {
+    sku: variant?.sku ?? '',
+    color: variant?.color ?? '',
+    size: variant?.size ?? '',
+    price: String(((variant?.price ?? 0) / 100) || ''),
+    stock_quantity: String(variant?.stock_quantity ?? 0),
+    stripe_price_id: variant?.stripe_price_id ?? '',
   }
 }
 
@@ -652,6 +673,9 @@ function App() {
   const [adminProductForm, setAdminProductForm] = useState(emptyAdminProductForm)
   const [adminEditingProductId, setAdminEditingProductId] = useState('')
   const [adminProductSaving, setAdminProductSaving] = useState(false)
+  const [adminVariantForm, setAdminVariantForm] = useState(emptyAdminVariantForm)
+  const [adminEditingVariantId, setAdminEditingVariantId] = useState('')
+  const [adminVariantSaving, setAdminVariantSaving] = useState(false)
   const [adminOrderSavingId, setAdminOrderSavingId] = useState('')
   const [adminOrderDrafts, setAdminOrderDrafts] = useState({})
   const [cartItems, setCartItems] = useState([
@@ -698,6 +722,10 @@ function App() {
   const adminRevenue = useMemo(
     () => adminOrders.reduce((sum, item) => sum + (item.total || 0), 0),
     [adminOrders],
+  )
+  const editingAdminProduct = useMemo(
+    () => adminProducts.find((item) => item.dbId === adminEditingProductId) ?? null,
+    [adminEditingProductId, adminProducts],
   )
 
   const applyCatalogProducts = (items) => {
@@ -1094,11 +1122,32 @@ function App() {
   const resetAdminProductEditor = () => {
     setAdminEditingProductId('')
     setAdminProductForm(emptyAdminProductForm)
+    setAdminEditingVariantId('')
+    setAdminVariantForm(emptyAdminVariantForm)
   }
 
   const handleEditAdminProduct = (product) => {
     setAdminEditingProductId(product.dbId)
     setAdminProductForm(toAdminProductForm(product))
+    setAdminEditingVariantId('')
+    setAdminVariantForm(emptyAdminVariantForm)
+  }
+
+  const handleAdminVariantFieldChange = (field, value) => {
+    setAdminVariantForm((current) => ({
+      ...current,
+      [field]: value,
+    }))
+  }
+
+  const resetAdminVariantEditor = () => {
+    setAdminEditingVariantId('')
+    setAdminVariantForm(emptyAdminVariantForm)
+  }
+
+  const handleEditAdminVariant = (variant) => {
+    setAdminEditingVariantId(variant.id)
+    setAdminVariantForm(toAdminVariantForm(variant))
   }
 
   const reloadAdminProductsAndCatalog = async () => {
@@ -1172,6 +1221,44 @@ function App() {
     }
   }
 
+  const handleAdminVariantSubmit = async (event) => {
+    event.preventDefault()
+
+    if (!accessToken || !adminEditingProductId) {
+      setAdminFeedback('请先选择一个商品，再维护它的变体和库存。')
+      return
+    }
+
+    try {
+      setAdminVariantSaving(true)
+      setAdminFeedback('')
+
+      const payload = {
+        sku: adminVariantForm.sku.trim(),
+        color: adminVariantForm.color.trim(),
+        size: adminVariantForm.size.trim(),
+        price: Math.round(Number(adminVariantForm.price) * 100),
+        stock_quantity: Number(adminVariantForm.stock_quantity),
+        stripe_price_id: adminVariantForm.stripe_price_id.trim() || null,
+      }
+
+      if (adminEditingVariantId) {
+        await updateAdminVariant(adminEditingVariantId, payload, accessToken)
+        setAdminFeedback('商品变体已更新。')
+      } else {
+        await createAdminVariant(adminEditingProductId, payload, accessToken)
+        setAdminFeedback('商品变体已创建。')
+      }
+
+      await reloadAdminProductsAndCatalog()
+      resetAdminVariantEditor()
+    } catch (error) {
+      setAdminFeedback(error.message || '商品变体保存失败。')
+    } finally {
+      setAdminVariantSaving(false)
+    }
+  }
+
   const handleAdminOrderDraftChange = (orderId, field, value) => {
     setAdminOrderDrafts((current) => ({
       ...current,
@@ -1208,6 +1295,36 @@ function App() {
       setAdminFeedback('订单状态已更新。')
     } catch (error) {
       setAdminFeedback(error.message || '订单更新失败。')
+    } finally {
+      setAdminOrderSavingId('')
+    }
+  }
+
+  const handleAdminOrderQuickAction = async (orderId, nextStatus, nextPaymentStatus) => {
+    handleAdminOrderDraftChange(orderId, 'status', nextStatus)
+    handleAdminOrderDraftChange(orderId, 'payment_status', nextPaymentStatus)
+
+    if (!accessToken) {
+      setAdminFeedback('当前没有管理员会话，无法更新订单。')
+      return
+    }
+
+    try {
+      setAdminOrderSavingId(orderId)
+      setAdminFeedback('')
+      await updateAdminOrder(
+        orderId,
+        {
+          status: nextStatus,
+          payment_status: nextPaymentStatus,
+          notes: adminOrderDrafts[orderId]?.notes?.trim() || null,
+        },
+        accessToken,
+      )
+      await reloadAdminOrders()
+      setAdminFeedback('订单快捷操作已完成。')
+    } catch (error) {
+      setAdminFeedback(error.message || '订单快捷操作失败。')
     } finally {
       setAdminOrderSavingId('')
     }
@@ -1945,7 +2062,7 @@ function App() {
                         <div>
                           <p className="label">PRODUCT EDITOR</p>
                           <h3>{adminEditingProductId ? '编辑商品' : '新增商品'}</h3>
-                          <p>这里先支持商品基础信息维护，变体和库存会继续往下补。</p>
+                          <p>支持商品基础信息、变体 SKU、颜色尺码与库存维护。</p>
                         </div>
                         {adminEditingProductId && (
                           <button type="button" className="ghost-btn compact" onClick={resetAdminProductEditor}>
@@ -2070,6 +2187,125 @@ function App() {
                           </button>
                         </div>
                       </form>
+
+                      {adminEditingProductId && (
+                        <div className="variant-manager">
+                          <div className="section-head panel-head">
+                            <div>
+                              <p className="label">VARIANT MANAGER</p>
+                              <h3>{editingAdminProduct?.name || '当前商品'} 的变体与库存</h3>
+                              <p>这里维护 SKU、颜色、尺码、售价和库存数量。</p>
+                            </div>
+                            {adminEditingVariantId && (
+                              <button type="button" className="ghost-btn compact" onClick={resetAdminVariantEditor}>
+                                新建变体
+                              </button>
+                            )}
+                          </div>
+
+                          <form className="admin-product-form" onSubmit={handleAdminVariantSubmit}>
+                            <label className="checkout-input">
+                              <span>SKU</span>
+                              <input
+                                type="text"
+                                value={adminVariantForm.sku}
+                                onChange={(event) => handleAdminVariantFieldChange('sku', event.target.value)}
+                                placeholder="SKU-001-BLK-42"
+                              />
+                            </label>
+                            <label className="checkout-input">
+                              <span>Color</span>
+                              <input
+                                type="text"
+                                value={adminVariantForm.color}
+                                onChange={(event) => handleAdminVariantFieldChange('color', event.target.value)}
+                                placeholder="Black"
+                              />
+                            </label>
+                            <label className="checkout-input">
+                              <span>Size</span>
+                              <input
+                                type="text"
+                                value={adminVariantForm.size}
+                                onChange={(event) => handleAdminVariantFieldChange('size', event.target.value)}
+                                placeholder="42"
+                              />
+                            </label>
+                            <label className="checkout-input">
+                              <span>Price (Yuan)</span>
+                              <input
+                                type="number"
+                                min="1"
+                                step="0.01"
+                                value={adminVariantForm.price}
+                                onChange={(event) => handleAdminVariantFieldChange('price', event.target.value)}
+                                placeholder="899"
+                              />
+                            </label>
+                            <label className="checkout-input">
+                              <span>Stock</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={adminVariantForm.stock_quantity}
+                                onChange={(event) => handleAdminVariantFieldChange('stock_quantity', event.target.value)}
+                                placeholder="20"
+                              />
+                            </label>
+                            <label className="checkout-input admin-span-2">
+                              <span>Stripe Price ID</span>
+                              <input
+                                type="text"
+                                value={adminVariantForm.stripe_price_id}
+                                onChange={(event) => handleAdminVariantFieldChange('stripe_price_id', event.target.value)}
+                                placeholder="price_xxx"
+                              />
+                            </label>
+                            <div className="admin-form-actions admin-span-2">
+                              <button type="submit" className="primary-btn" disabled={adminVariantSaving}>
+                                {adminVariantSaving
+                                  ? 'Saving...'
+                                  : adminEditingVariantId
+                                    ? 'Update Variant'
+                                    : 'Create Variant'}
+                              </button>
+                              <button type="button" className="ghost-btn" onClick={resetAdminVariantEditor}>
+                                Reset Variant
+                              </button>
+                            </div>
+                          </form>
+
+                          <div className="variant-list">
+                            {(editingAdminProduct?.variants ?? []).length === 0 && (
+                              <div className="empty-state">
+                                <p>当前商品还没有变体。先新增一个颜色/尺码 SKU。</p>
+                              </div>
+                            )}
+                            {(editingAdminProduct?.variants ?? []).map((variant) => (
+                              <article key={variant.id} className="variant-card">
+                                <div>
+                                  <strong>{variant.sku}</strong>
+                                  <small>
+                                    {variant.color} / {variant.size}
+                                  </small>
+                                </div>
+                                <div className="variant-metrics">
+                                  <span>{formatPriceFromCents(variant.price)}</span>
+                                  <span>库存 {variant.stock_quantity}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="ghost-btn compact"
+                                  onClick={() => handleEditAdminVariant(variant)}
+                                >
+                                  Edit Variant
+                                </button>
+                              </article>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="admin-table-wrap">
@@ -2087,7 +2323,10 @@ function App() {
                             <span>{product.name}</span>
                             <span>{product.category}</span>
                             <span>{formatPrice(product.price)}</span>
-                            <span>{product.variants?.length ?? 0}</span>
+                            <span>
+                              {(product.variants?.length ?? 0)} / 库存{' '}
+                              {(product.variants ?? []).reduce((sum, item) => sum + (item.stock_quantity || 0), 0)}
+                            </span>
                             <span className="data-actions">
                               <button
                                 type="button"
@@ -2157,6 +2396,30 @@ function App() {
                               </label>
                             </div>
                             <div className="admin-form-actions">
+                              <button
+                                type="button"
+                                className="ghost-btn compact"
+                                onClick={() => handleAdminOrderQuickAction(order.id, 'paid', 'paid')}
+                                disabled={adminOrderSavingId === order.id}
+                              >
+                                Mark Paid
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-btn compact"
+                                onClick={() => handleAdminOrderQuickAction(order.id, 'fulfilled', 'paid')}
+                                disabled={adminOrderSavingId === order.id}
+                              >
+                                Mark Fulfilled
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-btn compact"
+                                onClick={() => handleAdminOrderQuickAction(order.id, 'cancelled', 'failed')}
+                                disabled={adminOrderSavingId === order.id}
+                              >
+                                Cancel
+                              </button>
                               <button
                                 type="button"
                                 className="primary-btn compact"

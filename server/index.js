@@ -77,6 +77,19 @@ const adminOrderUpdateSchema = z
   })
   .refine((value) => Object.keys(value).length > 0, 'At least one order field is required')
 
+const adminVariantSchema = z.object({
+  sku: z.string().min(2),
+  color: z.string().min(1),
+  size: z.string().min(1),
+  price: z.number().int().positive(),
+  stock_quantity: z.number().int().min(0).default(0),
+  stripe_price_id: z.string().optional().nullable(),
+})
+
+const adminVariantUpdateSchema = adminVariantSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, 'At least one variant field is required')
+
 function corsOrigin(origin, callback) {
   if (!origin || !rawCorsOrigins?.length || rawCorsOrigins.includes(origin)) {
     callback(null, true)
@@ -162,6 +175,7 @@ function normalizeProducts(rows) {
     drop: row.drop_label,
     detail: row.detail,
     image: row.image_url,
+    is_active: row.is_active,
     variants:
       row.product_variants?.map((variant) => ({
         id: variant.id,
@@ -688,6 +702,58 @@ app.patch('/api/admin/orders/:orderId', async (request, response) => {
   } catch (error) {
     response.status(error.statusCode || 500).json({
       error: error.message || 'Failed to update order',
+    })
+  }
+})
+
+app.post('/api/admin/products/:productId/variants', async (request, response) => {
+  try {
+    await requireAdmin(request)
+
+    const productId = z.string().uuid().parse(request.params.productId)
+    const payload = adminVariantSchema.parse(request.body)
+    const { data, error } = await supabase
+      .from('product_variants')
+      .insert({
+        product_id: productId,
+        ...payload,
+      })
+      .select('*')
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    response.status(201).json({ variant: data })
+  } catch (error) {
+    response.status(error.statusCode || 500).json({
+      error: error.message || 'Failed to create product variant',
+    })
+  }
+})
+
+app.patch('/api/admin/variants/:variantId', async (request, response) => {
+  try {
+    await requireAdmin(request)
+
+    const variantId = z.string().uuid().parse(request.params.variantId)
+    const payload = adminVariantUpdateSchema.parse(request.body)
+    const { data, error } = await supabase
+      .from('product_variants')
+      .update(payload)
+      .eq('id', variantId)
+      .select('*')
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    response.json({ variant: data })
+  } catch (error) {
+    response.status(error.statusCode || 500).json({
+      error: error.message || 'Failed to update product variant',
     })
   }
 })

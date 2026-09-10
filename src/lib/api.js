@@ -96,3 +96,19 @@ export async function updateAdminOrder(orderId, payload, accessToken) {
     accessToken,
   })
 }
+
+export async function createAdminVariant(productId, payload, accessToken) {
+  return request(`/api/admin/products/${productId}/variants`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    accessToken,
+  })
+}
+
+export async function updateAdminVariant(variantId, payload, accessToken) {
+  return request(`/api/admin/variants/${variantId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    accessToken,
+  })
+}

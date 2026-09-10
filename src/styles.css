@@ -1303,6 +1303,12 @@ img {
   background: #fafafa;
 }
 
+.variant-manager,
+.variant-list {
+  display: grid;
+  gap: 14px;
+}
+
 .admin-product-form,
 .admin-order-grid {
   display: grid;
@@ -1332,6 +1338,32 @@ img {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.variant-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: white;
+}
+
+.variant-card strong {
+  color: var(--text-strong);
+}
+
+.variant-card small,
+.variant-metrics span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.variant-metrics {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
 }
 
 .admin-table-wrap h3 {
@@ -1526,8 +1558,13 @@ img {
   }
 
   .admin-product-form,
-  .admin-order-grid {
+  .admin-order-grid,
+  .variant-card {
     grid-template-columns: 1fr;
+  }
+
+  .variant-metrics {
+    justify-items: start;
   }
 
   .cart-item img {
