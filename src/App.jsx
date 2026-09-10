@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createCheckoutSession } from './lib/api'
+import {
+  createCheckoutSession,
+  fetchAccountOrders,
+  fetchAccountProfile,
+  fetchAdminOrders,
+  fetchAdminProducts,
+  fetchProducts,
+} from './lib/api'
+import { supabase } from './lib/supabase'
 
 const imageUrl = (prompt, imageSize = 'landscape_16_9') =>
   `https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=${encodeURIComponent(
@@ -278,7 +286,9 @@ const membershipOffers = [
   },
 ]
 
-const products = [
+const defaultSizeOptions = ['40', '41', '42', '43', '44']
+
+const seedProducts = [
   {
     id: 1,
     name: 'Aether Ridge GTX',
@@ -340,6 +350,8 @@ const products = [
     detail: '更偏机能审美的户外战术靴，用于强化品牌辨识度和男装线条感。',
   },
 ]
+
+const seedProductMap = new Map(seedProducts.map((product) => [product.id, product]))
 
 const blogPosts = [
   {
@@ -430,7 +442,70 @@ const socialGallery = [
 
 const navItems = ['WORKING', 'TACTICAL', 'HIKING', 'SUMMER', 'MEN', 'WOMEN']
 
-const sizeOptions = ['40', '41', '42', '43', '44']
+function uniqueValues(values) {
+  return [...new Set(values.filter(Boolean))]
+}
+
+function normalizeProduct(product) {
+  const seed = seedProductMap.get(product.id)
+  const variants = product.variants ?? []
+  const colors = uniqueValues(variants.map((item) => item.color))
+  const sizes = uniqueValues(variants.map((item) => item.size))
+
+  return {
+    ...seed,
+    ...product,
+    pace: product.pace || seed?.pace || 'All Day Comfort',
+    drop: product.drop || seed?.drop || 'Outdoor Core',
+    detail: product.detail || seed?.detail || 'Built for daily movement and outdoor use.',
+    image: product.image || seed?.image,
+    colors: colors.length > 0 ? colors : seed?.colors || ['Default'],
+    sizes: sizes.length > 0 ? sizes : seed?.sizes || defaultSizeOptions,
+  }
+}
+
+function getVariant(product, size, color) {
+  return product?.variants?.find((item) => item.size === size && item.color === color) ?? null
+}
+
+function getDefaultOption(product) {
+  const variant = product?.variants?.[0] ?? null
+  return {
+    size: variant?.size || product?.sizes?.[0] || defaultSizeOptions[0],
+    color: variant?.color || product?.colors?.[0] || 'Default',
+  }
+}
+
+function getUnitPrice(product, size, color) {
+  const variant = getVariant(product, size, color)
+  if (variant?.price) {
+    return variant.price / 100
+  }
+
+  return product?.price ?? 0
+}
+
+function formatPrice(value) {
+  return `¥${Math.round(value)}`
+}
+
+function formatPriceFromCents(value) {
+  return formatPrice((value ?? 0) / 100)
+}
+
+function formatDate(value) {
+  if (!value) {
+    return '--'
+  }
+
+  return new Date(value).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 function SearchIcon() {
   return (
@@ -513,12 +588,32 @@ function ArrowIcon({ direction = 'right' }) {
 function App() {
   const [activeView, setActiveView] = useState('home')
   const [activeSlide, setActiveSlide] = useState(0)
-  const [selectedProductId, setSelectedProductId] = useState(products[1].id)
+  const [catalogProducts, setCatalogProducts] = useState(() => seedProducts.map(normalizeProduct))
+  const [productsLoading, setProductsLoading] = useState(false)
+  const [productsFeedback, setProductsFeedback] = useState('')
+  const [selectedProductId, setSelectedProductId] = useState(seedProducts[1]?.id ?? seedProducts[0].id)
   const [selectedSize, setSelectedSize] = useState('42')
-  const [selectedColor, setSelectedColor] = useState(products[1].colors[0])
+  const [selectedColor, setSelectedColor] = useState(seedProducts[1]?.colors?.[0] ?? seedProducts[0].colors[0])
   const [customerEmail, setCustomerEmail] = useState('')
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [checkoutFeedback, setCheckoutFeedback] = useState('')
+  const [session, setSession] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [memberOrders, setMemberOrders] = useState([])
+  const [accountLoading, setAccountLoading] = useState(false)
+  const [accountFeedback, setAccountFeedback] = useState('')
+  const [authMode, setAuthMode] = useState('signin')
+  const [authLoading, setAuthLoading] = useState(false)
+  const [authFeedback, setAuthFeedback] = useState('')
+  const [authForm, setAuthForm] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+  })
+  const [adminProducts, setAdminProducts] = useState([])
+  const [adminOrders, setAdminOrders] = useState([])
+  const [adminLoading, setAdminLoading] = useState(false)
+  const [adminFeedback, setAdminFeedback] = useState('')
   const [cartItems, setCartItems] = useState([
     {
       productId: 2,
@@ -530,30 +625,122 @@ function App() {
 
   const hero = heroSlides[activeSlide]
   const selectedProduct = useMemo(
-    () => products.find((item) => item.id === selectedProductId) ?? products[0],
-    [selectedProductId],
+    () => catalogProducts.find((item) => item.id === selectedProductId) ?? catalogProducts[0],
+    [catalogProducts, selectedProductId],
   )
+  const accessToken = session?.access_token ?? null
+  const isAdmin = profile?.role === 'admin'
+  const accountTitle = profile?.full_name || session?.user?.email?.split('@')[0] || 'Account'
 
   const cartSummary = useMemo(() => {
     const lineItems = cartItems.map((item) => {
-      const product = products.find((entry) => entry.id === item.productId)
+      const product = catalogProducts.find((entry) => entry.id === item.productId)
+      const unitPrice = getUnitPrice(product, item.size, item.color)
+
       return {
         ...item,
         product,
-        subtotal: (product?.price ?? 0) * item.quantity,
+        unitPrice,
+        subtotal: unitPrice * item.quantity,
       }
     })
     const subtotal = lineItems.reduce((sum, item) => sum + item.subtotal, 0)
-    const shipping = subtotal > 999 ? 0 : subtotal > 0 ? 24 : 0
+    const shipping = subtotal >= 699 ? 0 : subtotal > 0 ? 24 : 0
     return {
       lineItems,
       subtotal,
       shipping,
       total: subtotal + shipping,
     }
-  }, [cartItems])
+  }, [cartItems, catalogProducts])
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+
+  useEffect(() => {
+    let active = true
+
+    const loadProducts = async () => {
+      try {
+        setProductsLoading(true)
+        setProductsFeedback('')
+        const payload = await fetchProducts()
+        if (!active) {
+          return
+        }
+
+        const nextProducts =
+          payload.products?.length > 0
+            ? payload.products.map(normalizeProduct)
+            : seedProducts.map(normalizeProduct)
+
+        setCatalogProducts(nextProducts)
+      } catch (error) {
+        if (!active) {
+          return
+        }
+
+        setProductsFeedback(error.message || '商品接口暂时不可用，当前展示前端演示数据。')
+        setCatalogProducts(seedProducts.map(normalizeProduct))
+      } finally {
+        if (active) {
+          setProductsLoading(false)
+        }
+      }
+    }
+
+    loadProducts()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!catalogProducts.length) {
+      return
+    }
+
+    const currentProduct =
+      catalogProducts.find((item) => item.id === selectedProductId) ?? catalogProducts[0]
+    const nextDefault = getDefaultOption(currentProduct)
+
+    if (currentProduct.id !== selectedProductId) {
+      setSelectedProductId(currentProduct.id)
+    }
+
+    if (!currentProduct.colors.includes(selectedColor)) {
+      setSelectedColor(nextDefault.color)
+    }
+
+    if (!currentProduct.sizes.includes(selectedSize)) {
+      setSelectedSize(nextDefault.size)
+    }
+  }, [catalogProducts, selectedColor, selectedProductId, selectedSize])
+
+  useEffect(() => {
+    if (!supabase) {
+      return undefined
+    }
+
+    let mounted = true
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) {
+        setSession(data.session ?? null)
+      }
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession ?? null)
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -568,10 +755,107 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!session?.user?.email) {
+      return
+    }
+
+    setCustomerEmail((current) => current || session.user.email || '')
+  }, [session])
+
+  useEffect(() => {
+    let active = true
+
+    const loadAccount = async () => {
+      if (!accessToken) {
+        setProfile(null)
+        setMemberOrders([])
+        setAccountFeedback('')
+        return
+      }
+
+      try {
+        setAccountLoading(true)
+        setAccountFeedback('')
+        const [profilePayload, orderPayload] = await Promise.all([
+          fetchAccountProfile(accessToken),
+          fetchAccountOrders(accessToken),
+        ])
+
+        if (!active) {
+          return
+        }
+
+        setProfile(profilePayload.profile ?? null)
+        setMemberOrders(orderPayload.orders ?? [])
+      } catch (error) {
+        if (!active) {
+          return
+        }
+
+        setAccountFeedback(error.message || '会员数据加载失败。')
+      } finally {
+        if (active) {
+          setAccountLoading(false)
+        }
+      }
+    }
+
+    loadAccount()
+
+    return () => {
+      active = false
+    }
+  }, [accessToken])
+
+  useEffect(() => {
+    if (activeView !== 'admin' || !accessToken || !isAdmin) {
+      return
+    }
+
+    let active = true
+
+    const loadAdminData = async () => {
+      try {
+        setAdminLoading(true)
+        setAdminFeedback('')
+
+        const [productPayload, orderPayload] = await Promise.all([
+          fetchAdminProducts(accessToken),
+          fetchAdminOrders(accessToken),
+        ])
+
+        if (!active) {
+          return
+        }
+
+        setAdminProducts(productPayload.products ?? [])
+        setAdminOrders(orderPayload.orders ?? [])
+      } catch (error) {
+        if (!active) {
+          return
+        }
+
+        setAdminFeedback(error.message || '后台数据加载失败。')
+      } finally {
+        if (active) {
+          setAdminLoading(false)
+        }
+      }
+    }
+
+    loadAdminData()
+
+    return () => {
+      active = false
+    }
+  }, [accessToken, activeView, isAdmin])
+
   const openProduct = (product) => {
+    const nextDefault = getDefaultOption(product)
     setSelectedProductId(product.id)
-    setSelectedSize('42')
-    setSelectedColor(product.colors[0])
+    setSelectedSize(nextDefault.size)
+    setSelectedColor(nextDefault.color)
     setActiveView('detail')
   }
 
@@ -656,7 +940,7 @@ function App() {
         })),
       }
 
-      const { url } = await createCheckoutSession(payload)
+      const { url } = await createCheckoutSession(payload, accessToken)
 
       if (!url) {
         throw new Error('结账链接创建失败，请检查后端或 Stripe 配置。')
@@ -668,6 +952,78 @@ function App() {
     } finally {
       setCheckoutLoading(false)
     }
+  }
+
+  const openAccount = (mode = 'signin') => {
+    setAuthMode(mode)
+    setAuthFeedback('')
+    setActiveView('account')
+  }
+
+  const handleAuthChange = (field, value) => {
+    setAuthForm((current) => ({
+      ...current,
+      [field]: value,
+    }))
+  }
+
+  const handleAuthSubmit = async (event) => {
+    event.preventDefault()
+
+    if (!supabase) {
+      setAuthFeedback('Supabase Auth 还没有配置，请先补齐前端环境变量。')
+      return
+    }
+
+    try {
+      setAuthLoading(true)
+      setAuthFeedback('')
+
+      if (authMode === 'signin') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: authForm.email,
+          password: authForm.password,
+        })
+
+        if (error) {
+          throw error
+        }
+
+        setAuthFeedback('登录成功，正在同步会员中心数据。')
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email: authForm.email,
+          password: authForm.password,
+          options: {
+            data: {
+              full_name: authForm.fullName,
+            },
+          },
+        })
+
+        if (error) {
+          throw error
+        }
+
+        setAuthFeedback('注册请求已提交，请查收邮件完成验证，或直接使用当前会话进入会员中心。')
+      }
+    } catch (error) {
+      setAuthFeedback(error.message || '认证失败，请稍后重试。')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const handleSignOut = async () => {
+    if (!supabase) {
+      return
+    }
+
+    await supabase.auth.signOut()
+    setProfile(null)
+    setMemberOrders([])
+    setActiveView('home')
+    setAuthFeedback('')
   }
 
   return (
@@ -708,12 +1064,22 @@ function App() {
               <input type="text" placeholder="Search boots, shoes..." />
             </label>
 
-            <button type="button" className="icon-btn" aria-label="账户">
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label="账户"
+              onClick={() => openAccount(session ? 'signin' : 'signup')}
+            >
               <UserIcon />
             </button>
             <button type="button" className="icon-btn" aria-label="收藏">
               <HeartIcon />
             </button>
+            {isAdmin && (
+              <button type="button" className="ghost-btn compact header-admin-btn" onClick={() => setActiveView('admin')}>
+                ADMIN
+              </button>
+            )}
             <button
               type="button"
               className="icon-btn cart-icon-btn"
@@ -729,6 +1095,19 @@ function App() {
         <main className="main-content">
           {activeView === 'home' && (
             <>
+              {(productsFeedback || productsLoading) && (
+                <section className="content-section content-section-tight">
+                  <div className="status-banner">
+                    <strong>{productsLoading ? '正在同步商品库' : '当前使用演示商品'}</strong>
+                    <span>
+                      {productsLoading
+                        ? '前端正在尝试从 /api/products 拉取真实商品数据。'
+                        : productsFeedback}
+                    </span>
+                  </div>
+                </section>
+              )}
+
               <section className="hero-stage">
                 <div className="hero-grid">
                   <article className="hero-panel hero-left">
@@ -741,7 +1120,7 @@ function App() {
                         <button
                           type="button"
                           className="primary-btn"
-                          onClick={() => openProduct(products[activeSlide])}
+                          onClick={() => openProduct(catalogProducts[activeSlide] ?? catalogProducts[0])}
                         >
                           {hero.cta}
                         </button>
@@ -815,7 +1194,7 @@ function App() {
                         <button
                           type="button"
                           className="text-link"
-                          onClick={() => openProduct(products[index])}
+                          onClick={() => openProduct(catalogProducts[index] ?? catalogProducts[0])}
                         >
                           SHOP NOW
                         </button>
@@ -852,7 +1231,11 @@ function App() {
                     <article key={offer.title} className="membership-offer">
                       <h3>{offer.title}</h3>
                       <p>{offer.body}</p>
-                      <button type="button" className="ghost-btn compact">
+                      <button
+                        type="button"
+                        className="ghost-btn compact"
+                        onClick={() => openAccount('signup')}
+                      >
                         {offer.cta}
                       </button>
                     </article>
@@ -872,7 +1255,7 @@ function App() {
                 </div>
 
                 <div className="product-grid new-grid">
-                  {products.map((product) => (
+                  {catalogProducts.map((product) => (
                     <article className="product-card" key={product.id}>
                       <div className="product-image-shell">
                         <SmartImage src={product.image} alt={product.name} variant="product" />
@@ -892,7 +1275,7 @@ function App() {
                       </div>
 
                       <div className="product-footer">
-                        <strong>¥{product.price}</strong>
+                        <strong>{formatPrice(product.price)}</strong>
                         <div className="footer-actions">
                           <button type="button" className="ghost-btn compact" onClick={() => openProduct(product)}>
                             DETAILS
@@ -901,10 +1284,11 @@ function App() {
                             type="button"
                             className="primary-btn compact"
                             onClick={() => {
+                              const defaults = getDefaultOption(product)
                               setSelectedProductId(product.id)
-                              setSelectedColor(product.colors[0])
-                              setSelectedSize('42')
-                              addLineItem(product, '42', product.colors[0])
+                              setSelectedColor(defaults.color)
+                              setSelectedSize(defaults.size)
+                              addLineItem(product, defaults.size, defaults.color)
                               setActiveView('cart')
                             }}
                           >
@@ -975,7 +1359,7 @@ function App() {
               <div className="detail-gallery">
                 <SmartImage src={selectedProduct.image} alt={selectedProduct.name} variant="product" />
                 <div className="thumbnail-row">
-                  {products.map((product) => (
+                  {catalogProducts.map((product) => (
                     <button
                       key={product.id}
                       type="button"
@@ -985,8 +1369,10 @@ function App() {
                           : 'thumbnail'
                       }
                       onClick={() => {
+                        const defaults = getDefaultOption(product)
                         setSelectedProductId(product.id)
-                        setSelectedColor(product.colors[0])
+                        setSelectedColor(defaults.color)
+                        setSelectedSize(defaults.size)
                       }}
                     >
                       <SmartImage src={product.image} alt={product.name} variant="product" />
@@ -999,7 +1385,7 @@ function App() {
                 <p className="label">{selectedProduct.category}</p>
                 <h2>{selectedProduct.name}</h2>
                 <div className="detail-price-row">
-                  <strong>¥{selectedProduct.price}</strong>
+                  <strong>{formatPrice(getUnitPrice(selectedProduct, selectedSize, selectedColor))}</strong>
                   <span>Rated {selectedProduct.rating}</span>
                 </div>
                 <p className="detail-description">{selectedProduct.detail}</p>
@@ -1023,7 +1409,7 @@ function App() {
                 <div className="detail-block">
                   <span>Size</span>
                   <div className="chip-row">
-                    {sizeOptions.map((size) => (
+                    {selectedProduct.sizes.map((size) => (
                       <button
                         key={size}
                         type="button"
@@ -1094,7 +1480,7 @@ function App() {
                       <small>
                         {item.color} / {item.size}
                       </small>
-                      <strong>¥{item.subtotal}</strong>
+                      <strong>{formatPrice(item.subtotal)}</strong>
                     </div>
                     <div className="stepper">
                       <button type="button" onClick={() => updateQuantity(item, -1)}>
@@ -1114,15 +1500,15 @@ function App() {
                 <h2>Order overview</h2>
                 <div className="summary-row">
                   <span>Subtotal</span>
-                  <strong>¥{cartSummary.subtotal}</strong>
+                  <strong>{formatPrice(cartSummary.subtotal)}</strong>
                 </div>
                 <div className="summary-row">
                   <span>Shipping</span>
-                  <strong>¥{cartSummary.shipping}</strong>
+                  <strong>{formatPrice(cartSummary.shipping)}</strong>
                 </div>
                 <div className="summary-row total">
                   <span>Total</span>
-                  <strong>¥{cartSummary.total}</strong>
+                  <strong>{formatPrice(cartSummary.total)}</strong>
                 </div>
 
                 <div className="checkout-benefits">
@@ -1142,6 +1528,7 @@ function App() {
                 </label>
 
                 {checkoutFeedback && <p className="checkout-feedback">{checkoutFeedback}</p>}
+                {session && <p className="checkout-feedback">已绑定会员账号，订单会自动关联到当前用户。</p>}
 
                 <button
                   type="button"
@@ -1152,6 +1539,268 @@ function App() {
                   {checkoutLoading ? 'Creating Checkout...' : 'Proceed To Checkout'}
                 </button>
               </aside>
+            </section>
+          )}
+
+          {activeView === 'account' && (
+            <section className="account-layout">
+              <article className="panel-card auth-panel">
+                <div className="section-head panel-head">
+                  <div>
+                    <p className="label">MEMBER CENTER</p>
+                    <h2>{session ? `欢迎回来，${accountTitle}` : '登录 / 注册会员'}</h2>
+                    <p>
+                      {session
+                        ? '当前页面已经接上 Supabase Auth，可查看会员资料和历史订单。'
+                        : '先登录会员，再把订单、地址和后台权限接到真实服务。'}
+                    </p>
+                  </div>
+                </div>
+
+                {!session && (
+                  <>
+                    <div className="switch-row">
+                      <button
+                        type="button"
+                        className={authMode === 'signin' ? 'ghost-btn compact active-tab' : 'ghost-btn compact'}
+                        onClick={() => setAuthMode('signin')}
+                      >
+                        登录
+                      </button>
+                      <button
+                        type="button"
+                        className={authMode === 'signup' ? 'ghost-btn compact active-tab' : 'ghost-btn compact'}
+                        onClick={() => setAuthMode('signup')}
+                      >
+                        注册
+                      </button>
+                    </div>
+
+                    <form className="auth-form" onSubmit={handleAuthSubmit}>
+                      {authMode === 'signup' && (
+                        <label className="checkout-input">
+                          <span>Full Name</span>
+                          <input
+                            type="text"
+                            value={authForm.fullName}
+                            onChange={(event) => handleAuthChange('fullName', event.target.value)}
+                            placeholder="Your name"
+                          />
+                        </label>
+                      )}
+
+                      <label className="checkout-input">
+                        <span>Email</span>
+                        <input
+                          type="email"
+                          value={authForm.email}
+                          onChange={(event) => handleAuthChange('email', event.target.value)}
+                          placeholder="you@example.com"
+                        />
+                      </label>
+
+                      <label className="checkout-input">
+                        <span>Password</span>
+                        <input
+                          type="password"
+                          value={authForm.password}
+                          onChange={(event) => handleAuthChange('password', event.target.value)}
+                          placeholder="At least 6 characters"
+                        />
+                      </label>
+
+                      {authFeedback && <p className="checkout-feedback">{authFeedback}</p>}
+
+                      <button type="submit" className="primary-btn full-width" disabled={authLoading}>
+                        {authLoading ? 'Submitting...' : authMode === 'signin' ? 'Sign In' : 'Create Account'}
+                      </button>
+                    </form>
+                  </>
+                )}
+
+                {session && (
+                  <div className="account-grid">
+                    <div className="info-block">
+                      <span>Member</span>
+                      <strong>{profile?.full_name || session.user.email}</strong>
+                      <small>{profile?.email || session.user.email}</small>
+                    </div>
+                    <div className="info-block">
+                      <span>Role</span>
+                      <strong>{profile?.role || 'customer'}</strong>
+                      <small>{isAdmin ? 'Has admin access' : 'Standard member access'}</small>
+                    </div>
+                    <div className="info-block">
+                      <span>Orders</span>
+                      <strong>{memberOrders.length}</strong>
+                      <small>Linked to current account</small>
+                    </div>
+                    <div className="account-actions">
+                      {isAdmin && (
+                        <button type="button" className="ghost-btn" onClick={() => setActiveView('admin')}>
+                          Open Admin
+                        </button>
+                      )}
+                      <button type="button" className="primary-btn" onClick={handleSignOut}>
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </article>
+
+              <aside className="panel-card orders-panel">
+                <div className="section-head panel-head">
+                  <div>
+                    <p className="label">ORDER HISTORY</p>
+                    <h2>会员订单</h2>
+                    <p>Stripe 支付成功后，订单会通过 webhook 回写，再出现在这里。</p>
+                  </div>
+                </div>
+
+                {accountLoading && <div className="empty-state"><p>正在加载会员资料与订单...</p></div>}
+                {accountFeedback && <p className="checkout-feedback">{accountFeedback}</p>}
+
+                {!session && (
+                  <div className="empty-state">
+                    <p>登录后即可查看会员订单、订单状态和后台权限。</p>
+                  </div>
+                )}
+
+                {session && !accountLoading && memberOrders.length === 0 && (
+                  <div className="empty-state">
+                    <p>当前账号还没有历史订单。你可以直接去购物车发起真实 Checkout。</p>
+                  </div>
+                )}
+
+                {memberOrders.length > 0 && (
+                  <div className="order-stack">
+                    {memberOrders.map((order) => (
+                      <article key={order.id} className="order-card">
+                        <div className="order-card-head">
+                          <div>
+                            <strong>{order.customer_email}</strong>
+                            <span>{formatDate(order.created_at)}</span>
+                          </div>
+                          <div className="order-state">
+                            <b>{order.status}</b>
+                            <span>{order.payment_status}</span>
+                          </div>
+                        </div>
+                        <div className="order-items">
+                          {(order.order_items || []).map((item) => (
+                            <div key={`${order.id}-${item.sku}-${item.size}`} className="order-item-row">
+                              <span>{item.product_name}</span>
+                              <small>
+                                {item.color} / {item.size} x {item.quantity}
+                              </small>
+                              <strong>{formatPriceFromCents(item.line_total)}</strong>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="order-total-row">
+                          <span>Total</span>
+                          <strong>{formatPriceFromCents(order.total)}</strong>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </aside>
+            </section>
+          )}
+
+          {activeView === 'admin' && (
+            <section className="admin-layout">
+              <article className="panel-card">
+                <div className="section-head panel-head">
+                  <div>
+                    <p className="label">ADMIN PANEL</p>
+                    <h2>商品与订单后台</h2>
+                    <p>当前版本先接入只读后台视图，用于运营查看商品、库存和订单状态。</p>
+                  </div>
+                  <button type="button" className="ghost-btn compact" onClick={() => setActiveView('account')}>
+                    Back To Account
+                  </button>
+                </div>
+
+                {!isAdmin && (
+                  <div className="empty-state">
+                    <p>当前账号没有管理员权限。请把 `profiles.role` 设为 `admin` 后再进入后台。</p>
+                  </div>
+                )}
+
+                {isAdmin && (
+                  <>
+                    {adminFeedback && <p className="checkout-feedback">{adminFeedback}</p>}
+                    {adminLoading && <div className="empty-state"><p>正在同步后台商品与订单数据...</p></div>}
+
+                    <div className="account-grid admin-stats">
+                      <div className="info-block">
+                        <span>Products</span>
+                        <strong>{adminProducts.length}</strong>
+                        <small>Catalog records</small>
+                      </div>
+                      <div className="info-block">
+                        <span>Orders</span>
+                        <strong>{adminOrders.length}</strong>
+                        <small>All-time orders</small>
+                      </div>
+                      <div className="info-block">
+                        <span>Revenue</span>
+                        <strong>
+                          {formatPriceFromCents(
+                            adminOrders.reduce((sum, item) => sum + (item.total || 0), 0),
+                          )}
+                        </strong>
+                        <small>Gross amount</small>
+                      </div>
+                    </div>
+
+                    <div className="admin-table-wrap">
+                      <h3>Products</h3>
+                      <div className="data-table">
+                        <div className="data-row data-head">
+                          <span>Name</span>
+                          <span>Category</span>
+                          <span>Price</span>
+                          <span>Variants</span>
+                        </div>
+                        {adminProducts.map((product) => (
+                          <div key={product.id} className="data-row">
+                            <span>{product.name}</span>
+                            <span>{product.category}</span>
+                            <span>{formatPrice(product.price)}</span>
+                            <span>{product.variants?.length ?? 0}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="admin-table-wrap">
+                      <h3>Orders</h3>
+                      <div className="data-table">
+                        <div className="data-row data-head">
+                          <span>Email</span>
+                          <span>Status</span>
+                          <span>Created</span>
+                          <span>Total</span>
+                        </div>
+                        {adminOrders.map((order) => (
+                          <div key={order.id} className="data-row">
+                            <span>{order.customer_email}</span>
+                            <span>
+                              {order.status} / {order.payment_status}
+                            </span>
+                            <span>{formatDate(order.created_at)}</span>
+                            <span>{formatPriceFromCents(order.total)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </article>
             </section>
           )}
         </main>

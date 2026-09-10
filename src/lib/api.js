@@ -8,13 +8,23 @@ function buildUrl(path) {
   return `${API_BASE_URL}${path}`
 }
 
+function createHeaders(options = {}) {
+  const headers = {
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(options.headers || {}),
+  }
+
+  if (options.accessToken) {
+    headers.Authorization = `Bearer ${options.accessToken}`
+  }
+
+  return headers
+}
+
 export async function request(path, options = {}) {
   const response = await fetch(buildUrl(path), {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
     ...options,
+    headers: createHeaders(options),
   })
 
   const isJson = response.headers.get('content-type')?.includes('application/json')
@@ -27,13 +37,38 @@ export async function request(path, options = {}) {
   return payload
 }
 
-export async function createCheckoutSession(payload) {
+export async function createCheckoutSession(payload, accessToken) {
   return request('/api/checkout/session', {
     method: 'POST',
     body: JSON.stringify(payload),
+    accessToken,
   })
 }
 
 export async function fetchProducts() {
   return request('/api/products')
+}
+
+export async function fetchAccountProfile(accessToken) {
+  return request('/api/account/profile', {
+    accessToken,
+  })
+}
+
+export async function fetchAccountOrders(accessToken) {
+  return request('/api/account/orders', {
+    accessToken,
+  })
+}
+
+export async function fetchAdminProducts(accessToken) {
+  return request('/api/admin/products', {
+    accessToken,
+  })
+}
+
+export async function fetchAdminOrders(accessToken) {
+  return request('/api/admin/orders', {
+    accessToken,
+  })
 }

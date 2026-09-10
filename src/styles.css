@@ -1106,12 +1106,224 @@ img {
   font-size: 14px;
 }
 
+.content-section-tight {
+  padding-top: 18px;
+}
+
+.status-banner,
+.panel-card {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: white;
+  box-shadow: var(--shadow-soft);
+}
+
+.status-banner {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+}
+
+.status-banner strong {
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.status-banner span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.header-admin-btn {
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.account-layout,
+.admin-layout {
+  display: grid;
+  gap: 22px;
+  padding: 42px 22px 0;
+}
+
+.account-layout {
+  grid-template-columns: minmax(0, 0.95fr) minmax(340px, 1.05fr);
+}
+
+.panel-card {
+  padding: 28px;
+}
+
+.panel-head {
+  margin-bottom: 12px;
+}
+
+.switch-row,
+.account-grid,
+.account-actions,
+.order-card-head,
+.order-total-row,
+.data-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.switch-row {
+  margin-bottom: 18px;
+}
+
+.active-tab {
+  border-color: rgba(36, 119, 255, 0.38);
+  box-shadow: inset 0 0 0 1px rgba(36, 119, 255, 0.18);
+}
+
+.auth-form,
+.order-stack,
+.admin-table-wrap {
+  display: grid;
+  gap: 14px;
+}
+
+.account-grid {
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.info-block {
+  flex: 1 1 180px;
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fafafa;
+}
+
+.info-block span,
+.order-state span {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.info-block strong,
+.order-state b,
+.order-total-row strong {
+  color: var(--text-strong);
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+.info-block small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.account-actions {
+  flex: 1 1 100%;
+  justify-content: flex-end;
+}
+
+.order-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fafafa;
+}
+
+.order-card-head {
+  align-items: flex-start;
+}
+
+.order-card-head strong,
+.order-item-row strong {
+  color: var(--text-strong);
+}
+
+.order-card-head span,
+.order-item-row small,
+.order-total-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.order-state {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+}
+
+.order-items {
+  display: grid;
+  gap: 10px;
+}
+
+.order-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.order-total-row {
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.admin-stats {
+  margin: 22px 0;
+}
+
+.admin-table-wrap h3 {
+  margin: 0 0 12px;
+  color: var(--text-strong);
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.data-table {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.data-row {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.data-row:first-child {
+  border-top: 0;
+}
+
+.data-row span {
+  flex: 1 1 25%;
+  min-width: 0;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.data-head {
+  background: #fafafa;
+}
+
+.data-head span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 1240px) {
   .site-header,
   .membership-card,
   .detail-layout,
   .cart-layout,
-  .site-footer {
+  .site-footer,
+  .account-layout {
     grid-template-columns: 1fr;
   }
 
@@ -1154,7 +1366,9 @@ img {
   .detail-info,
   .cart-list,
   .checkout-card,
-  .site-footer {
+  .site-footer,
+  .panel-card,
+  .status-banner {
     border-radius: 24px;
   }
 
@@ -1239,6 +1453,11 @@ img {
     grid-template-columns: 1fr;
   }
 
+  .order-item-row,
+  .data-row {
+    grid-template-columns: 1fr;
+  }
+
   .cart-item img {
     max-width: 200px;
   }
@@ -1273,7 +1492,9 @@ img {
   .detail-gallery,
   .detail-info,
   .cart-list,
-  .checkout-card {
+  .checkout-card,
+  .panel-card,
+  .status-banner {
     border-radius: 0;
   }
 

@@ -284,6 +284,82 @@ app.get('/api/products', async (_request, response) => {
   }
 })
 
+app.get('/api/account/profile', async (request, response) => {
+  try {
+    const user = await getAuthenticatedUser(request)
+    if (!user) {
+      response.status(401).json({
+        error: 'Authentication required',
+      })
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, role, created_at, updated_at')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    response.json({ profile: data })
+  } catch (error) {
+    response.status(error.statusCode || 500).json({
+      error: error.message || 'Failed to fetch profile',
+    })
+  }
+})
+
+app.get('/api/account/orders', async (request, response) => {
+  try {
+    const user = await getAuthenticatedUser(request)
+    if (!user) {
+      response.status(401).json({
+        error: 'Authentication required',
+      })
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select(
+        `
+          id,
+          customer_email,
+          status,
+          payment_status,
+          subtotal,
+          shipping,
+          total,
+          created_at,
+          order_items (
+            product_name,
+            sku,
+            color,
+            size,
+            quantity,
+            unit_price,
+            line_total
+          )
+        `,
+      )
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw error
+    }
+
+    response.json({ orders: data ?? [] })
+  } catch (error) {
+    response.status(error.statusCode || 500).json({
+      error: error.message || 'Failed to fetch account orders',
+    })
+  }
+})
+
 app.post('/api/checkout/session', async (request, response) => {
   try {
     assertService('Supabase', supabase)
