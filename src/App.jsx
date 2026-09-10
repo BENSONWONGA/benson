@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createCheckoutSession } from './lib/api'
 
 const imageUrl = (prompt, imageSize = 'landscape_16_9') =>
   `https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=${encodeURIComponent(
@@ -515,6 +516,9 @@ function App() {
   const [selectedProductId, setSelectedProductId] = useState(products[1].id)
   const [selectedSize, setSelectedSize] = useState('42')
   const [selectedColor, setSelectedColor] = useState(products[1].colors[0])
+  const [customerEmail, setCustomerEmail] = useState('')
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [checkoutFeedback, setCheckoutFeedback] = useState('')
   const [cartItems, setCartItems] = useState([
     {
       productId: 2,
@@ -550,6 +554,19 @@ function App() {
   }, [cartItems])
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const checkoutState = params.get('checkout')
+
+    if (checkoutState === 'success') {
+      setCheckoutFeedback('支付已完成，订单状态会通过 Stripe Webhook 自动同步。')
+    }
+
+    if (checkoutState === 'cancelled') {
+      setCheckoutFeedback('支付已取消，你可以返回购物车重新发起结账。')
+    }
+  }, [])
 
   const openProduct = (product) => {
     setSelectedProductId(product.id)
@@ -612,6 +629,45 @@ function App() {
         ? (activeSlide + 1) % heroSlides.length
         : (activeSlide - 1 + heroSlides.length) % heroSlides.length
     setActiveSlide(nextIndex)
+  }
+
+  const startCheckout = async () => {
+    if (cartItems.length === 0) {
+      setCheckoutFeedback('购物车为空，先挑一双鞋再发起支付。')
+      return
+    }
+
+    if (!customerEmail.trim()) {
+      setCheckoutFeedback('请输入结账邮箱，用于创建订单和接收支付信息。')
+      return
+    }
+
+    try {
+      setCheckoutLoading(true)
+      setCheckoutFeedback('')
+
+      const payload = {
+        customerEmail: customerEmail.trim(),
+        items: cartItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+        })),
+      }
+
+      const { url } = await createCheckoutSession(payload)
+
+      if (!url) {
+        throw new Error('结账链接创建失败，请检查后端或 Stripe 配置。')
+      }
+
+      window.location.href = url
+    } catch (error) {
+      setCheckoutFeedback(error.message || '结账失败，请稍后重试。')
+    } finally {
+      setCheckoutLoading(false)
+    }
   }
 
   return (
@@ -1075,8 +1131,25 @@ function App() {
                   <span>满 ¥699 包邮</span>
                 </div>
 
-                <button type="button" className="primary-btn full-width">
-                  Proceed To Checkout
+                <label className="checkout-input">
+                  <span>Checkout Email</span>
+                  <input
+                    type="email"
+                    value={customerEmail}
+                    onChange={(event) => setCustomerEmail(event.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </label>
+
+                {checkoutFeedback && <p className="checkout-feedback">{checkoutFeedback}</p>}
+
+                <button
+                  type="button"
+                  className="primary-btn full-width"
+                  onClick={startCheckout}
+                  disabled={checkoutLoading}
+                >
+                  {checkoutLoading ? 'Creating Checkout...' : 'Proceed To Checkout'}
                 </button>
               </aside>
             </section>
