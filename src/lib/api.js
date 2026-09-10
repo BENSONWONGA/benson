@@ -72,3 +72,27 @@ export async function fetchAdminOrders(accessToken) {
     accessToken,
   })
 }
+
+export async function createAdminProduct(payload, accessToken) {
+  return request('/api/admin/products', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    accessToken,
+  })
+}
+
+export async function updateAdminProduct(productId, payload, accessToken) {
+  return request(`/api/admin/products/${productId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    accessToken,
+  })
+}
+
+export async function updateAdminOrder(orderId, payload, accessToken) {
+  return request(`/api/admin/orders/${orderId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    accessToken,
+  })
+}

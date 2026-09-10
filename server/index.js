@@ -65,6 +65,18 @@ const adminProductSchema = z.object({
   is_active: z.boolean().default(true),
 })
 
+const adminProductUpdateSchema = adminProductSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, 'At least one product field is required')
+
+const adminOrderUpdateSchema = z
+  .object({
+    status: z.enum(['pending', 'paid', 'cancelled', 'fulfilled']).optional(),
+    payment_status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional(),
+    notes: z.string().max(1000).optional().nullable(),
+  })
+  .refine((value) => Object.keys(value).length > 0, 'At least one order field is required')
+
 function corsOrigin(origin, callback) {
   if (!origin || !rawCorsOrigins?.length || rawCorsOrigins.includes(origin)) {
     callback(null, true)
@@ -333,6 +345,7 @@ app.get('/api/account/orders', async (request, response) => {
           subtotal,
           shipping,
           total,
+          notes,
           created_at,
           order_items (
             product_name,
@@ -625,6 +638,56 @@ app.post('/api/admin/products', async (request, response) => {
   } catch (error) {
     response.status(error.statusCode || 500).json({
       error: error.message || 'Failed to create product',
+    })
+  }
+})
+
+app.patch('/api/admin/products/:productId', async (request, response) => {
+  try {
+    await requireAdmin(request)
+
+    const productId = z.string().uuid().parse(request.params.productId)
+    const payload = adminProductUpdateSchema.parse(request.body)
+    const { data, error } = await supabase
+      .from('products')
+      .update(payload)
+      .eq('id', productId)
+      .select('*')
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    response.json({ product: data })
+  } catch (error) {
+    response.status(error.statusCode || 500).json({
+      error: error.message || 'Failed to update product',
+    })
+  }
+})
+
+app.patch('/api/admin/orders/:orderId', async (request, response) => {
+  try {
+    await requireAdmin(request)
+
+    const orderId = z.string().uuid().parse(request.params.orderId)
+    const payload = adminOrderUpdateSchema.parse(request.body)
+    const { data, error } = await supabase
+      .from('orders')
+      .update(payload)
+      .eq('id', orderId)
+      .select('id, status, payment_status, notes, updated_at')
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    response.json({ order: data })
+  } catch (error) {
+    response.status(error.statusCode || 500).json({
+      error: error.message || 'Failed to update order',
     })
   }
 })

@@ -1020,6 +1020,23 @@ img {
   background: #fafafa;
 }
 
+.checkout-input select,
+.checkout-input textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  background: #fafafa;
+  font: inherit;
+  color: var(--text);
+  outline: none;
+}
+
+.checkout-input textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
 .checkout-feedback {
   margin: 0 0 16px;
   color: var(--muted);
@@ -1278,6 +1295,45 @@ img {
   margin: 22px 0;
 }
 
+.admin-form-card {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fafafa;
+}
+
+.admin-product-form,
+.admin-order-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-span-2 {
+  grid-column: 1 / -1;
+}
+
+.admin-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-checkbox input {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .admin-table-wrap h3 {
   margin: 0 0 12px;
   color: var(--text-strong);
@@ -1303,6 +1359,15 @@ img {
   min-width: 0;
   color: var(--text);
   font-size: 13px;
+}
+
+.data-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-order-card {
+  background: white;
 }
 
 .data-head {
@@ -1341,7 +1406,9 @@ img {
   }
 
   .category-grid,
-  .new-grid {
+  .new-grid,
+  .admin-product-form,
+  .admin-order-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1455,6 +1522,11 @@ img {
 
   .order-item-row,
   .data-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-product-form,
+  .admin-order-grid {
     grid-template-columns: 1fr;
   }
 

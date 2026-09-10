@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  createAdminProduct,
   createCheckoutSession,
   fetchAccountOrders,
   fetchAccountProfile,
   fetchAdminOrders,
   fetchAdminProducts,
   fetchProducts,
+  updateAdminOrder,
+  updateAdminProduct,
 } from './lib/api'
 import { supabase } from './lib/supabase'
 
@@ -441,6 +444,21 @@ const socialGallery = [
 ]
 
 const navItems = ['WORKING', 'TACTICAL', 'HIKING', 'SUMMER', 'MEN', 'WOMEN']
+const adminOrderStatusOptions = ['pending', 'paid', 'cancelled', 'fulfilled']
+const adminPaymentStatusOptions = ['pending', 'paid', 'failed', 'refunded']
+const emptyAdminProductForm = {
+  frontend_key: '',
+  slug: '',
+  name: '',
+  category: '',
+  base_price: '',
+  rating: '5',
+  pace: '',
+  drop_label: '',
+  detail: '',
+  image_url: '',
+  is_active: true,
+}
 
 function uniqueValues(values) {
   return [...new Set(values.filter(Boolean))]
@@ -459,6 +477,7 @@ function normalizeProduct(product) {
     drop: product.drop || seed?.drop || 'Outdoor Core',
     detail: product.detail || seed?.detail || 'Built for daily movement and outdoor use.',
     image: product.image || seed?.image,
+    is_active: product.is_active ?? seed?.is_active ?? true,
     colors: colors.length > 0 ? colors : seed?.colors || ['Default'],
     sizes: sizes.length > 0 ? sizes : seed?.sizes || defaultSizeOptions,
   }
@@ -505,6 +524,22 @@ function formatDate(value) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function toAdminProductForm(product) {
+  return {
+    frontend_key: String(product.id ?? ''),
+    slug: product.slug ?? '',
+    name: product.name ?? '',
+    category: product.category ?? '',
+    base_price: String(product.price ?? ''),
+    rating: String(product.rating ?? 5),
+    pace: product.pace ?? '',
+    drop_label: product.drop ?? '',
+    detail: product.detail ?? '',
+    image_url: product.image ?? '',
+    is_active: product.is_active ?? true,
+  }
 }
 
 function SearchIcon() {
@@ -614,6 +649,11 @@ function App() {
   const [adminOrders, setAdminOrders] = useState([])
   const [adminLoading, setAdminLoading] = useState(false)
   const [adminFeedback, setAdminFeedback] = useState('')
+  const [adminProductForm, setAdminProductForm] = useState(emptyAdminProductForm)
+  const [adminEditingProductId, setAdminEditingProductId] = useState('')
+  const [adminProductSaving, setAdminProductSaving] = useState(false)
+  const [adminOrderSavingId, setAdminOrderSavingId] = useState('')
+  const [adminOrderDrafts, setAdminOrderDrafts] = useState({})
   const [cartItems, setCartItems] = useState([
     {
       productId: 2,
@@ -655,6 +695,17 @@ function App() {
   }, [cartItems, catalogProducts])
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const adminRevenue = useMemo(
+    () => adminOrders.reduce((sum, item) => sum + (item.total || 0), 0),
+    [adminOrders],
+  )
+
+  const applyCatalogProducts = (items) => {
+    const nextProducts =
+      items?.length > 0 ? items.map(normalizeProduct) : seedProducts.map(normalizeProduct)
+    setCatalogProducts(nextProducts)
+    return nextProducts
+  }
 
   useEffect(() => {
     let active = true
@@ -668,19 +719,14 @@ function App() {
           return
         }
 
-        const nextProducts =
-          payload.products?.length > 0
-            ? payload.products.map(normalizeProduct)
-            : seedProducts.map(normalizeProduct)
-
-        setCatalogProducts(nextProducts)
+        applyCatalogProducts(payload.products)
       } catch (error) {
         if (!active) {
           return
         }
 
         setProductsFeedback(error.message || '商品接口暂时不可用，当前展示前端演示数据。')
-        setCatalogProducts(seedProducts.map(normalizeProduct))
+        applyCatalogProducts([])
       } finally {
         if (active) {
           setProductsLoading(false)
@@ -831,6 +877,18 @@ function App() {
 
         setAdminProducts(productPayload.products ?? [])
         setAdminOrders(orderPayload.orders ?? [])
+        setAdminOrderDrafts(
+          Object.fromEntries(
+            (orderPayload.orders ?? []).map((item) => [
+              item.id,
+              {
+                status: item.status,
+                payment_status: item.payment_status,
+                notes: item.notes ?? '',
+              },
+            ]),
+          ),
+        )
       } catch (error) {
         if (!active) {
           return
@@ -1024,6 +1082,135 @@ function App() {
     setMemberOrders([])
     setActiveView('home')
     setAuthFeedback('')
+  }
+
+  const handleAdminProductFieldChange = (field, value) => {
+    setAdminProductForm((current) => ({
+      ...current,
+      [field]: value,
+    }))
+  }
+
+  const resetAdminProductEditor = () => {
+    setAdminEditingProductId('')
+    setAdminProductForm(emptyAdminProductForm)
+  }
+
+  const handleEditAdminProduct = (product) => {
+    setAdminEditingProductId(product.dbId)
+    setAdminProductForm(toAdminProductForm(product))
+  }
+
+  const reloadAdminProductsAndCatalog = async () => {
+    const [adminProductPayload, catalogPayload] = await Promise.all([
+      fetchAdminProducts(accessToken),
+      fetchProducts(),
+    ])
+
+    setAdminProducts(adminProductPayload.products ?? [])
+    applyCatalogProducts(catalogPayload.products)
+  }
+
+  const reloadAdminOrders = async () => {
+    const payload = await fetchAdminOrders(accessToken)
+    const nextOrders = payload.orders ?? []
+    setAdminOrders(nextOrders)
+    setAdminOrderDrafts(
+      Object.fromEntries(
+        nextOrders.map((item) => [
+          item.id,
+          {
+            status: item.status,
+            payment_status: item.payment_status,
+            notes: item.notes ?? '',
+          },
+        ]),
+      ),
+    )
+  }
+
+  const handleAdminProductSubmit = async (event) => {
+    event.preventDefault()
+
+    if (!accessToken) {
+      setAdminFeedback('当前没有管理员会话，无法提交商品。')
+      return
+    }
+
+    try {
+      setAdminProductSaving(true)
+      setAdminFeedback('')
+
+      const payload = {
+        frontend_key: Number(adminProductForm.frontend_key),
+        slug: adminProductForm.slug.trim(),
+        name: adminProductForm.name.trim(),
+        category: adminProductForm.category.trim(),
+        base_price: Math.round(Number(adminProductForm.base_price) * 100),
+        rating: Number(adminProductForm.rating),
+        pace: adminProductForm.pace.trim() || null,
+        drop_label: adminProductForm.drop_label.trim() || null,
+        detail: adminProductForm.detail.trim() || null,
+        image_url: adminProductForm.image_url.trim() || null,
+        is_active: Boolean(adminProductForm.is_active),
+      }
+
+      if (adminEditingProductId) {
+        await updateAdminProduct(adminEditingProductId, payload, accessToken)
+        setAdminFeedback('商品已更新。')
+      } else {
+        await createAdminProduct(payload, accessToken)
+        setAdminFeedback('商品已创建。')
+      }
+
+      await reloadAdminProductsAndCatalog()
+      resetAdminProductEditor()
+    } catch (error) {
+      setAdminFeedback(error.message || '商品保存失败。')
+    } finally {
+      setAdminProductSaving(false)
+    }
+  }
+
+  const handleAdminOrderDraftChange = (orderId, field, value) => {
+    setAdminOrderDrafts((current) => ({
+      ...current,
+      [orderId]: {
+        status: current[orderId]?.status || 'pending',
+        payment_status: current[orderId]?.payment_status || 'pending',
+        notes: current[orderId]?.notes || '',
+        ...current[orderId],
+        [field]: value,
+      },
+    }))
+  }
+
+  const handleAdminOrderSave = async (orderId) => {
+    if (!accessToken) {
+      setAdminFeedback('当前没有管理员会话，无法更新订单。')
+      return
+    }
+
+    try {
+      setAdminOrderSavingId(orderId)
+      setAdminFeedback('')
+      const draft = adminOrderDrafts[orderId]
+      await updateAdminOrder(
+        orderId,
+        {
+          status: draft?.status,
+          payment_status: draft?.payment_status,
+          notes: draft?.notes?.trim() || null,
+        },
+        accessToken,
+      )
+      await reloadAdminOrders()
+      setAdminFeedback('订单状态已更新。')
+    } catch (error) {
+      setAdminFeedback(error.message || '订单更新失败。')
+    } finally {
+      setAdminOrderSavingId('')
+    }
   }
 
   return (
@@ -1748,13 +1935,141 @@ function App() {
                       </div>
                       <div className="info-block">
                         <span>Revenue</span>
-                        <strong>
-                          {formatPriceFromCents(
-                            adminOrders.reduce((sum, item) => sum + (item.total || 0), 0),
-                          )}
-                        </strong>
+                        <strong>{formatPriceFromCents(adminRevenue)}</strong>
                         <small>Gross amount</small>
                       </div>
+                    </div>
+
+                    <div className="admin-form-card">
+                      <div className="section-head panel-head">
+                        <div>
+                          <p className="label">PRODUCT EDITOR</p>
+                          <h3>{adminEditingProductId ? '编辑商品' : '新增商品'}</h3>
+                          <p>这里先支持商品基础信息维护，变体和库存会继续往下补。</p>
+                        </div>
+                        {adminEditingProductId && (
+                          <button type="button" className="ghost-btn compact" onClick={resetAdminProductEditor}>
+                            新建模式
+                          </button>
+                        )}
+                      </div>
+
+                      <form className="admin-product-form" onSubmit={handleAdminProductSubmit}>
+                        <label className="checkout-input">
+                          <span>Frontend Key</span>
+                          <input
+                            type="number"
+                            value={adminProductForm.frontend_key}
+                            onChange={(event) => handleAdminProductFieldChange('frontend_key', event.target.value)}
+                            placeholder="5"
+                          />
+                        </label>
+                        <label className="checkout-input">
+                          <span>Slug</span>
+                          <input
+                            type="text"
+                            value={adminProductForm.slug}
+                            onChange={(event) => handleAdminProductFieldChange('slug', event.target.value)}
+                            placeholder="new-product-slug"
+                          />
+                        </label>
+                        <label className="checkout-input">
+                          <span>Name</span>
+                          <input
+                            type="text"
+                            value={adminProductForm.name}
+                            onChange={(event) => handleAdminProductFieldChange('name', event.target.value)}
+                            placeholder="New Product Name"
+                          />
+                        </label>
+                        <label className="checkout-input">
+                          <span>Category</span>
+                          <input
+                            type="text"
+                            value={adminProductForm.category}
+                            onChange={(event) => handleAdminProductFieldChange('category', event.target.value)}
+                            placeholder="HIKING BOOTS"
+                          />
+                        </label>
+                        <label className="checkout-input">
+                          <span>Price (Yuan)</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            value={adminProductForm.base_price}
+                            onChange={(event) => handleAdminProductFieldChange('base_price', event.target.value)}
+                            placeholder="899"
+                          />
+                        </label>
+                        <label className="checkout-input">
+                          <span>Rating</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="5"
+                            step="0.1"
+                            value={adminProductForm.rating}
+                            onChange={(event) => handleAdminProductFieldChange('rating', event.target.value)}
+                            placeholder="4.8"
+                          />
+                        </label>
+                        <label className="checkout-input">
+                          <span>Use Case</span>
+                          <input
+                            type="text"
+                            value={adminProductForm.pace}
+                            onChange={(event) => handleAdminProductFieldChange('pace', event.target.value)}
+                            placeholder="全天徒步"
+                          />
+                        </label>
+                        <label className="checkout-input">
+                          <span>Tech Label</span>
+                          <input
+                            type="text"
+                            value={adminProductForm.drop_label}
+                            onChange={(event) => handleAdminProductFieldChange('drop_label', event.target.value)}
+                            placeholder="Vibram Lite"
+                          />
+                        </label>
+                        <label className="checkout-input admin-span-2">
+                          <span>Image URL</span>
+                          <input
+                            type="url"
+                            value={adminProductForm.image_url}
+                            onChange={(event) => handleAdminProductFieldChange('image_url', event.target.value)}
+                            placeholder="https://..."
+                          />
+                        </label>
+                        <label className="checkout-input admin-span-2">
+                          <span>Detail</span>
+                          <textarea
+                            value={adminProductForm.detail}
+                            onChange={(event) => handleAdminProductFieldChange('detail', event.target.value)}
+                            placeholder="Product detail copy"
+                          />
+                        </label>
+                        <label className="admin-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={adminProductForm.is_active}
+                            onChange={(event) => handleAdminProductFieldChange('is_active', event.target.checked)}
+                          />
+                          <span>Active product</span>
+                        </label>
+                        <div className="admin-form-actions admin-span-2">
+                          <button type="submit" className="primary-btn" disabled={adminProductSaving}>
+                            {adminProductSaving
+                              ? 'Saving...'
+                              : adminEditingProductId
+                                ? 'Update Product'
+                                : 'Create Product'}
+                          </button>
+                          <button type="button" className="ghost-btn" onClick={resetAdminProductEditor}>
+                            Reset
+                          </button>
+                        </div>
+                      </form>
                     </div>
 
                     <div className="admin-table-wrap">
@@ -1765,6 +2080,7 @@ function App() {
                           <span>Category</span>
                           <span>Price</span>
                           <span>Variants</span>
+                          <span>Actions</span>
                         </div>
                         {adminProducts.map((product) => (
                           <div key={product.id} className="data-row">
@@ -1772,6 +2088,15 @@ function App() {
                             <span>{product.category}</span>
                             <span>{formatPrice(product.price)}</span>
                             <span>{product.variants?.length ?? 0}</span>
+                            <span className="data-actions">
+                              <button
+                                type="button"
+                                className="ghost-btn compact"
+                                onClick={() => handleEditAdminProduct(product)}
+                              >
+                                Edit
+                              </button>
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -1779,22 +2104,69 @@ function App() {
 
                     <div className="admin-table-wrap">
                       <h3>Orders</h3>
-                      <div className="data-table">
-                        <div className="data-row data-head">
-                          <span>Email</span>
-                          <span>Status</span>
-                          <span>Created</span>
-                          <span>Total</span>
-                        </div>
+                      <div className="order-stack">
                         {adminOrders.map((order) => (
-                          <div key={order.id} className="data-row">
-                            <span>{order.customer_email}</span>
-                            <span>
-                              {order.status} / {order.payment_status}
-                            </span>
-                            <span>{formatDate(order.created_at)}</span>
-                            <span>{formatPriceFromCents(order.total)}</span>
-                          </div>
+                          <article key={order.id} className="order-card admin-order-card">
+                            <div className="order-card-head">
+                              <div>
+                                <strong>{order.customer_email}</strong>
+                                <span>{formatDate(order.created_at)}</span>
+                              </div>
+                              <strong>{formatPriceFromCents(order.total)}</strong>
+                            </div>
+                            <div className="admin-order-grid">
+                              <label className="checkout-input">
+                                <span>Order Status</span>
+                                <select
+                                  value={adminOrderDrafts[order.id]?.status ?? order.status}
+                                  onChange={(event) =>
+                                    handleAdminOrderDraftChange(order.id, 'status', event.target.value)
+                                  }
+                                >
+                                  {adminOrderStatusOptions.map((item) => (
+                                    <option key={item} value={item}>
+                                      {item}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="checkout-input">
+                                <span>Payment Status</span>
+                                <select
+                                  value={adminOrderDrafts[order.id]?.payment_status ?? order.payment_status}
+                                  onChange={(event) =>
+                                    handleAdminOrderDraftChange(order.id, 'payment_status', event.target.value)
+                                  }
+                                >
+                                  {adminPaymentStatusOptions.map((item) => (
+                                    <option key={item} value={item}>
+                                      {item}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="checkout-input admin-span-2">
+                                <span>Notes</span>
+                                <textarea
+                                  value={adminOrderDrafts[order.id]?.notes ?? ''}
+                                  onChange={(event) =>
+                                    handleAdminOrderDraftChange(order.id, 'notes', event.target.value)
+                                  }
+                                  placeholder="Internal order notes"
+                                />
+                              </label>
+                            </div>
+                            <div className="admin-form-actions">
+                              <button
+                                type="button"
+                                className="primary-btn compact"
+                                onClick={() => handleAdminOrderSave(order.id)}
+                                disabled={adminOrderSavingId === order.id}
+                              >
+                                {adminOrderSavingId === order.id ? 'Saving...' : 'Save Order'}
+                              </button>
+                            </div>
+                          </article>
                         ))}
                       </div>
                     </div>
