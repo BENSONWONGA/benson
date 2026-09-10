@@ -427,7 +427,7 @@ const socialGallery = [
   },
 ]
 
-const navItems = ['EARLY BIRD OFFER', 'HOT PICKS', 'MEN', 'WOMEN', 'ABOUT US', 'ALLSWIFT']
+const navItems = ['WORKING', 'TACTICAL', 'HIKING', 'SUMMER', 'MEN', 'WOMEN']
 
 const sizeOptions = ['40', '41', '42', '43', '44']
 
@@ -649,7 +649,7 @@ function App() {
           <div className="header-tools">
             <label className="search-box" aria-label="搜索">
               <SearchIcon />
-              <input type="text" placeholder="Search..." />
+              <input type="text" placeholder="Search boots, shoes..." />
             </label>
 
             <button type="button" className="icon-btn" aria-label="账户">
