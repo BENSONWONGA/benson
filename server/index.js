@@ -260,6 +260,23 @@ function parseDataUrl(dataUrl, contentType) {
   return buffer
 }
 
+function normalizeStripeAddress(details, fallbackEmail = null) {
+  const address = details?.address
+  const normalized = {
+    name: details?.name ?? null,
+    phone: details?.phone ?? null,
+    email: details?.email ?? fallbackEmail ?? null,
+    line1: address?.line1 ?? null,
+    line2: address?.line2 ?? null,
+    city: address?.city ?? null,
+    state: address?.state ?? null,
+    postal_code: address?.postal_code ?? null,
+    country: address?.country ?? null,
+  }
+
+  return Object.values(normalized).some(Boolean) ? normalized : null
+}
+
 app.use(
   cors({
     origin: corsOrigin,
@@ -270,6 +287,7 @@ app.use(
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (request, response) => {
   try {
     assertService('Stripe', stripe)
+    assertService('Supabase', supabase)
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
       throw Object.assign(new Error('Stripe webhook secret is missing'), { statusCode: 503 })
@@ -287,15 +305,26 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
       const orderId = session.metadata?.order_id
 
       if (orderId) {
-        await supabase
-          .from('orders')
-          .update({
-            status: 'paid',
-            payment_status: 'paid',
-            stripe_checkout_session_id: session.id,
-            stripe_payment_intent_id: String(session.payment_intent ?? ''),
-          })
-          .eq('id', orderId)
+        const shippingAddress = normalizeStripeAddress(
+          session.shipping_details,
+          session.customer_details?.email ?? session.customer_email ?? null,
+        )
+        const billingAddress = normalizeStripeAddress(
+          session.customer_details,
+          session.customer_email ?? null,
+        )
+
+        const { error } = await supabase.rpc('mark_order_paid', {
+          order_uuid: orderId,
+          checkout_session_id_input: session.id,
+          payment_intent_id_input: String(session.payment_intent ?? ''),
+          shipping_address_input: shippingAddress,
+          billing_address_input: billingAddress,
+        })
+
+        if (error) {
+          throw error
+        }
       }
     }
 
@@ -311,6 +340,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
             stripe_checkout_session_id: session.id,
           })
           .eq('id', session.metadata.order_id)
+          .neq('payment_status', 'paid')
       }
     }
 
@@ -431,6 +461,8 @@ app.get('/api/account/orders', async (request, response) => {
           tracking_number,
           shipped_at,
           fulfilled_at,
+          shipping_address,
+          billing_address,
           subtotal,
           shipping,
           total,
@@ -637,6 +669,8 @@ app.get('/api/admin/orders', async (request, response) => {
           tracking_number,
           shipped_at,
           fulfilled_at,
+          shipping_address,
+          billing_address,
           subtotal,
           shipping,
           total,

@@ -87,6 +87,7 @@ npm run dev
 - 下单接口会基于数据库中的商品和变体重新校验价格与库存
 - 支付采用 Stripe Checkout Sessions
 - 订单支付结果通过 Stripe Webhook 回写 Supabase
+- webhook 会把 Stripe 地址信息回写到订单，并只在首次支付成功时扣减库存
 - 商品图上传会使用 Supabase Storage；接口首次上传时会自动创建公开 bucket
 
 ## 部署到服务器

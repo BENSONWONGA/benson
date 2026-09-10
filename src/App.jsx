@@ -537,6 +537,22 @@ function formatDate(value) {
   })
 }
 
+function formatAddress(address) {
+  if (!address) {
+    return ''
+  }
+
+  return [
+    address.name,
+    [address.line1, address.line2].filter(Boolean).join(' '),
+    [address.city, address.state, address.postal_code].filter(Boolean).join(' '),
+    address.country,
+    address.phone,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
+
 function formatDateTimeLocalValue(value) {
   if (!value) {
     return ''
@@ -2143,6 +2159,12 @@ function App() {
                           <span>Total</span>
                           <strong>{formatPriceFromCents(order.total)}</strong>
                         </div>
+                        {order.shipping_address && (
+                          <div className="order-address-note">
+                            <span>收货地址</span>
+                            <p>{formatAddress(order.shipping_address)}</p>
+                          </div>
+                        )}
                         {(order.shipping_carrier || order.tracking_number || order.shipped_at) && (
                           <div className="shipping-meta">
                             {order.shipping_carrier && <span>物流: {order.shipping_carrier}</span>}
@@ -2543,6 +2565,22 @@ function App() {
                               </div>
                               <strong>{formatPriceFromCents(order.total)}</strong>
                             </div>
+                            {(order.shipping_address || order.billing_address) && (
+                              <div className="order-address-grid">
+                                {order.shipping_address && (
+                                  <div className="order-address-card">
+                                    <span>Shipping Address</span>
+                                    <p>{formatAddress(order.shipping_address)}</p>
+                                  </div>
+                                )}
+                                {order.billing_address && (
+                                  <div className="order-address-card">
+                                    <span>Billing Address</span>
+                                    <p>{formatAddress(order.billing_address)}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             <div className="admin-order-grid">
                               <label className="checkout-input">
                                 <span>Order Status</span>

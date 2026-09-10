@@ -161,6 +161,66 @@ as $$
   );
 $$;
 
+create or replace function public.mark_order_paid(
+  order_uuid uuid,
+  checkout_session_id_input text,
+  payment_intent_id_input text,
+  shipping_address_input jsonb default null,
+  billing_address_input jsonb default null
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_payment_status public.payment_status;
+  item record;
+begin
+  select payment_status
+  into current_payment_status
+  from public.orders
+  where id = order_uuid
+  for update;
+
+  if not found then
+    raise exception 'Order not found';
+  end if;
+
+  if current_payment_status = 'paid' then
+    return false;
+  end if;
+
+  for item in
+    select variant_id, quantity, product_name
+    from public.order_items
+    where order_id = order_uuid
+      and variant_id is not null
+  loop
+    update public.product_variants
+    set stock_quantity = stock_quantity - item.quantity
+    where id = item.variant_id
+      and stock_quantity >= item.quantity;
+
+    if not found then
+      raise exception 'Insufficient stock when finalizing paid order for %', coalesce(item.product_name, 'variant');
+    end if;
+  end loop;
+
+  update public.orders
+  set
+    status = 'paid',
+    payment_status = 'paid',
+    stripe_checkout_session_id = checkout_session_id_input,
+    stripe_payment_intent_id = nullif(payment_intent_id_input, ''),
+    shipping_address = coalesce(shipping_address_input, shipping_address),
+    billing_address = coalesce(billing_address_input, billing_address)
+  where id = order_uuid;
+
+  return true;
+end;
+$$;
+
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 alter table public.product_variants enable row level security;

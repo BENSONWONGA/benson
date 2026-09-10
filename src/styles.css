@@ -1306,6 +1306,43 @@ img {
   background: white;
 }
 
+.order-address-note,
+.order-address-card {
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fafafa;
+}
+
+.order-address-note {
+  margin-top: 12px;
+}
+
+.order-address-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.order-address-note span,
+.order-address-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.order-address-note p,
+.order-address-card p {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .admin-stats {
   margin: 22px 0;
 }
@@ -1646,6 +1683,10 @@ img {
   .admin-product-form,
   .admin-order-grid,
   .variant-card {
+    grid-template-columns: 1fr;
+  }
+
+  .order-address-grid {
     grid-template-columns: 1fr;
   }
 
