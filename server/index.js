@@ -15,7 +15,10 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const workspaceRoot = path.resolve(__dirname, '..')
 const distDir = path.join(workspaceRoot, 'dist')
-const indexFile = path.join(distDir, 'index.html')
+const distIndexFile = path.join(distDir, 'index.html')
+const rootAssetsDir = path.join(workspaceRoot, 'assets')
+const rootIndexFile = path.join(workspaceRoot, 'index.html')
+const rootFaviconFile = path.join(workspaceRoot, 'favicon.svg')
 
 const app = express()
 const port = Number(process.env.PORT || 3000)
@@ -917,12 +920,26 @@ app.post('/api/admin/media/upload', async (request, response) => {
 if (fs.existsSync(distDir)) {
   app.use(express.static(distDir))
   app.get(/.*/, (_request, response, next) => {
-    if (!fs.existsSync(indexFile)) {
+    if (!fs.existsSync(distIndexFile)) {
       next()
       return
     }
 
-    response.sendFile(indexFile)
+    response.sendFile(distIndexFile)
+  })
+} else if (fs.existsSync(rootIndexFile)) {
+  if (fs.existsSync(rootAssetsDir)) {
+    app.use('/assets', express.static(rootAssetsDir))
+  }
+
+  if (fs.existsSync(rootFaviconFile)) {
+    app.get('/favicon.svg', (_request, response) => {
+      response.sendFile(rootFaviconFile)
+    })
+  }
+
+  app.get(/.*/, (_request, response) => {
+    response.sendFile(rootIndexFile)
   })
 }
 
