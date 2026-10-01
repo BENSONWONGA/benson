@@ -15,6 +15,7 @@ const _stores = {
   carts: new Map(),        // sessionId -> { items: [{productId, size, width, qty}] }
   fitProfiles: new Map(),  // sessionId -> FitProfile（Phase 3 迁移为账户级 + 欧盟分区）
   orders: new Map(),       // orderId -> Order
+  inventory: new Map(),    // "productId:size" -> qty（modules/inventory 管理）
   events: [],              // 埋点事件缓冲（TODO: 换 Kafka producer）
 };
 

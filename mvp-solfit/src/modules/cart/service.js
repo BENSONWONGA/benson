@@ -22,7 +22,7 @@ export function addToCart(sessionId, { productId, size, width = "Standard", qty 
   if (existing) existing.qty += qty;
   else cart.items.push({ productId: product.id, size, width, qty });
   store("carts").set(sessionId, cart);
-  trackEvent("cart.add", { sessionId, productId: product.id, size, width, qty });
+  trackEvent("cart_added", { sessionId, productId: product.id, size, width, qty });
   return cart;
 }
 

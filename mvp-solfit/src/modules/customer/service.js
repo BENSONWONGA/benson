@@ -17,13 +17,13 @@ export function saveFitProfile(sessionId, profile) {
     region: profile.region || "US", // GDPR 分区路由
   };
   store("fitProfiles").set(sessionId, record);
-  trackEvent("fit.profile_saved", { sessionId, recommended: profile?.recommendation?.size });
+  trackEvent("fit_profile_saved", { sessionId, recommended: profile?.recommendation?.size });
   return record;
 }
 
 /** GDPR 数据删除权 —— 合规第一天做对 */
 export function deleteProfile(sessionId) {
   const existed = store("fitProfiles").delete(sessionId);
-  trackEvent("fit.profile_deleted", { sessionId });
+  trackEvent("profile_erased", { sessionId });
   return existed;
 }

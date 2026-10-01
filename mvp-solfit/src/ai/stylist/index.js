@@ -24,7 +24,7 @@ Rules:
  * @returns {{reply: string, products: Array, source: "llm"|"rules"}}
  */
 export async function askStylist(message, history = []) {
-  trackEvent("ai.stylist_message", { message });
+  trackEvent("ai_stylist_message", { message });
 
   // 未配置 LLM => 规则兜底（骨架开箱可跑）
   if (!llmEnabled) {

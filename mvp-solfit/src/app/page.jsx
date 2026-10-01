@@ -4,11 +4,16 @@
  */
 
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { listProducts } from "@/modules/catalog/service";
 import { coldStartRecommend } from "@/ai/recommender";
+import { getCurrencyFromCookies } from "@/lib/currency";
 import ProductCard from "@/components/ProductCard";
 
+export const dynamic = "force-dynamic"; // 货币偏好按会话渲染（SEO 策略见方案 §6.2：ISR + 边缘个性化）
+
 export default function HomePage() {
+  const currency = getCurrencyFromCookies(cookies());
   const featured = listProducts({ sort: "rating" }).slice(0, 4);
   const recommended = coldStartRecommend({ max: 4 }); // Phase 2 换召回+排序
 
@@ -40,7 +45,7 @@ export default function HomePage() {
           <div className="eyebrow">AI recommendations</div>
           <h2 style={{ marginBottom: 24 }}>Fitted for you this week</h2>
           <div className="product-grid">
-            {recommended.map((p) => <ProductCard key={p.id} product={p} />)}
+            {recommended.map((p) => <ProductCard key={p.id} product={p} currency={currency} />)}
           </div>
         </div>
       </section>
@@ -50,7 +55,7 @@ export default function HomePage() {
           <div className="eyebrow">Top rated</div>
           <h2 style={{ marginBottom: 24 }}>Most fitted, most loved</h2>
           <div className="product-grid">
-            {featured.map((p) => <ProductCard key={p.id} product={p} />)}
+            {featured.map((p) => <ProductCard key={p.id} product={p} currency={currency} />)}
           </div>
         </div>
       </section>

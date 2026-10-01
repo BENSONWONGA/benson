@@ -14,7 +14,7 @@ import { trackEvent } from "@/lib/db";
  *   排序:   rank = lightGBM/DNN(ctr_features)  —— 特征来自 trackEvent 沉淀
  */
 export function coldStartRecommend({ context = {}, excludeId, max = 4 } = {}) {
-  trackEvent("ai.recommend_served", { context, type: "cold_start" });
+  trackEvent("recommend_served", { context, type: "cold_start" });
 
   let list = listProducts({ sort: "rating" });
   if (excludeId) list = list.filter((p) => p.id !== Number(excludeId));

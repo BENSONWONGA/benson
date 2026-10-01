@@ -37,7 +37,7 @@ export function recommendSize(profile) {
   };
   const confidence = widthFeel === "Standard" && !footNotes.length ? 94 : 89; // 规则版置信度（V3 换模型输出）
 
-  trackEvent("ai.size_recommended", { profile, size, width, confidence });
+  trackEvent("ai_size_recommended", { profile, size, width, confidence });
 
   return {
     size: String(size % 1 === 0 ? size : size.toFixed(1)),

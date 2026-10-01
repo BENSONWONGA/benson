@@ -11,6 +11,6 @@ export async function GET(request) {
     heel: sp.get("heel") || "All",
     sort: sp.get("sort") || "featured",
   });
-  trackEvent("catalog.list_viewed", { query: Object.fromEntries(sp) });
+  trackEvent("catalog_list_viewed", { query: Object.fromEntries(sp) });
   return NextResponse.json({ code: 0, data, total: data.length });
 }

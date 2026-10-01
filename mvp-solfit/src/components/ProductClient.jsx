@@ -8,6 +8,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { track } from "@/lib/track";
 
 export default function ProductClient({ product }) {
   const [width, setWidth] = useState(product.widths[0]);
@@ -22,6 +23,11 @@ export default function ProductClient({ product }) {
     setToast(msg);
     setTimeout(() => setToast(null), 2600);
   };
+
+  // 商品浏览埋点（漏斗第一级，consent 闸门内 —— lib/track）
+  useEffect(() => {
+    track("product_viewed", { productId: product.id, category: product.category });
+  }, [product.id]);
 
   // 已保存的脚型档案 → 进站预选（GET 回读，含楦型校验结果）
   useEffect(() => {

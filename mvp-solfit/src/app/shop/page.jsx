@@ -3,7 +3,9 @@
  */
 
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { listProducts } from "@/modules/catalog/service";
+import { getCurrencyFromCookies } from "@/lib/currency";
 import ProductCard from "@/components/ProductCard";
 
 const CATEGORIES = ["All", "Loafers", "Sneakers", "Heels", "Sandals", "Boots", "Slippers"];
@@ -11,6 +13,7 @@ const WIDTHS = ["All", "Standard", "Wide"];
 const HEELS = ["All", "Flat", "Low", "Mid"];
 
 export const metadata = { title: "Shop all" };
+export const dynamic = "force-dynamic";
 
 function chipHref(params, key, value) {
   const sp = new URLSearchParams(params);
@@ -21,6 +24,7 @@ function chipHref(params, key, value) {
 }
 
 export default function ShopPage({ searchParams }) {
+  const currency = getCurrencyFromCookies(cookies());
   const products = listProducts(searchParams);
 
   return (
@@ -51,7 +55,7 @@ export default function ShopPage({ searchParams }) {
       <div className="container" style={{ paddingBottom: 64 }}>
         {products.length ? (
           <div className="product-grid">
-            {products.map((p) => <ProductCard key={p.id} product={p} />)}
+            {products.map((p) => <ProductCard key={p.id} product={p} currency={currency} />)}
           </div>
         ) : (
           <div style={{ textAlign: "center", padding: 64, color: "var(--text-sub)" }}>

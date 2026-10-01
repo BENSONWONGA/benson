@@ -4,8 +4,10 @@
  */
 
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { getProduct, LAST_LIBRARY } from "@/modules/catalog/service";
 import { coldStartRecommend } from "@/ai/recommender";
+import { getCurrencyFromCookies, formatMoney } from "@/lib/currency";
 import ProductCard from "@/components/ProductCard";
 import ProductClient from "@/components/ProductClient";
 
@@ -43,6 +45,7 @@ export default function ProductPage({ params }) {
   const product = getProduct(params.id);
   if (!product) notFound();
 
+  const currency = getCurrencyFromCookies(cookies());
   const last = LAST_LIBRARY[product.lastCode];
   const related = coldStartRecommend({ excludeId: product.id, max: 4 });
 
@@ -59,8 +62,8 @@ export default function ProductPage({ params }) {
           <h1>{product.name}</h1>
           <p className="muted" style={{ fontSize: 13 }}>★ {product.rating} · {product.reviewsCount.toLocaleString()} verified reviews</p>
           <p style={{ margin: "12px 0" }}>
-            <span className="price" style={{ fontSize: 20 }}>${product.price}</span>
-            {product.compareAt ? <span className="strike">${product.compareAt}</span> : null}
+            <span className="price" style={{ fontSize: 20 }}>{formatMoney(product.price, currency)}</span>
+            {product.compareAt ? <span className="strike">{formatMoney(product.compareAt, currency)}</span> : null}
           </p>
           <p className="lede" style={{ fontSize: 14 }}>{product.desc}</p>
           <div className="fit-strip">
@@ -83,7 +86,7 @@ export default function ProductPage({ params }) {
         <div className="container">
           <h2 style={{ marginBottom: 20 }}>Pairs that fit the other days of your week</h2>
           <div className="product-grid">
-            {related.map((p) => <ProductCard key={p.id} product={p} />)}
+            {related.map((p) => <ProductCard key={p.id} product={p} currency={currency} />)}
           </div>
         </div>
       </section>

@@ -6,6 +6,6 @@ import { trackEvent } from "@/lib/db";
 export async function GET(_req, { params }) {
   const product = getProduct(params.id);
   if (!product) return NextResponse.json({ code: 404, message: "not found" }, { status: 404 });
-  trackEvent("catalog.product_viewed", { productId: product.id });
+  trackEvent("product_api_fetched", { productId: product.id });
   return NextResponse.json({ code: 0, data: product });
 }
