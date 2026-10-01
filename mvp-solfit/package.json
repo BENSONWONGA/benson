@@ -1,0 +1,16 @@
+{
+  "name": "mvp-solfit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SOLFIT 鞋业跨境 B2C AI 独立站 — MVP 骨架（模块化单体业务域 + 独立 AI 服务层）",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}
