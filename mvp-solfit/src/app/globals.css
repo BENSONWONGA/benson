@@ -182,6 +182,17 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 800; line-height: 1.
   .hero, .pdp { grid-template-columns: 1fr; gap: 24px; }
   .product-grid { grid-template-columns: repeat(2, 1fr); }
   .main-nav { display: none; }
+  .header-inner { padding: 0 16px; gap: 12px; }
+  .header-actions { gap: 2px; }
+  .header-actions > a { margin-left: 0 !important; }
+}
+
+/* 超窄手机（≤560px）：顶栏收纳 —— 隐藏 Account 文字链、压缩切换器，保证无横向溢出 */
+@media (max-width: 560px) {
+  .header-inner { padding: 0 12px; gap: 8px; }
+  .logo { font-size: 17px; letter-spacing: 0.12em; }
+  .header-actions a[aria-label="My account"] { display: none; }
+  .header-actions select { padding: 0 6px !important; font-size: 11px !important; }
 }
 
 /* ============================================================
