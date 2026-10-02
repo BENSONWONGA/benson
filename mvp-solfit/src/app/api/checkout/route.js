@@ -7,6 +7,7 @@ import { quoteTax } from "@/modules/tax/service";
 import { createOrder } from "@/modules/order/service";
 import { validatePromo, checkSelfReferral } from "@/modules/loyalty/service";
 import { FX_RATES } from "@/lib/currency";
+import { getSiteSettings } from "@/lib/site-settings";
 import { observed } from "@/lib/observe";
 
 /**
@@ -66,6 +67,10 @@ export async function POST(request) {
     }
 
     if (body.action === "place") {
+      // 维护模式闸门（Phase 22 总后台站点设置）：浏览与报价不受影响，仅拦新单
+      if (getSiteSettings().maintenance) {
+        return NextResponse.json({ code: 503, message: "STORE_MAINTENANCE" }, { status: 503 });
+      }
       const country = body.address?.country;
       // 以 place 时的方法与税重算（防前端篡改金额）
       const q = await quoteFor(sessionId, country);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/modules/merchant/service";
 import { adminAdjustPoints } from "@/modules/loyalty/service";
+import { auditAdmin } from "@/modules/master/service";
 import { observed } from "@/lib/observe";
 
 /**
@@ -17,6 +18,7 @@ export async function POST(request) {
     try {
       if (body.action === "adjust_points") {
         const result = adminAdjustPoints(body.userId, body.delta, body.reason);
+        auditAdmin("points_adjusted", `会员 ${body.userId} 积分 ${body.delta > 0 ? "+" : ""}${body.delta}（${body.reason || "手动调整"}）`, request);
         return NextResponse.json({ code: 0, data: result });
       }
       return NextResponse.json({ code: 400, message: "Unknown action" }, { status: 400 });

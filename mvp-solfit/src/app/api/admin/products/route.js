@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdmin, adminListProducts, adminCreateProduct, adminUpdateProduct, adminSetListed } from "@/modules/merchant/service";
+import { auditAdmin } from "@/modules/master/service";
 import { observed } from "@/lib/observe";
 
 /**
@@ -26,14 +27,17 @@ export async function POST(request) {
     try {
       if (body.action === "create") {
         const product = await adminCreateProduct(body);
+        auditAdmin("product_created", `「${product.name}」$${product.price}（每码初始库存 6）`, request);
         return NextResponse.json({ code: 0, data: { product } });
       }
       if (body.action === "update") {
         const product = adminUpdateProduct(body.id, body.patch || {});
+        auditAdmin("product_updated", `#${product.id}「${product.name}」`, request);
         return NextResponse.json({ code: 0, data: { product } });
       }
       if (body.action === "list" || body.action === "unlist") {
         const product = adminSetListed(body.id, body.action === "list");
+        auditAdmin(body.action === "list" ? "product_listed" : "product_unlisted", `#${product.id}「${product.name}」`, request);
         return NextResponse.json({ code: 0, data: { product } });
       }
       return NextResponse.json({ code: 400, message: "Unknown action" }, { status: 400 });

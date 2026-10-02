@@ -4,6 +4,8 @@
  * TODO(Phase 1.5): 心理定价本地化价目表（$99/€89/£79）+ 每日汇率刷新（ECB feed / 支付网关 API）
  */
 
+import { getSiteSettings } from "@/lib/site-settings";
+
 export const FX_RATES = { USD: 1, EUR: 0.92, GBP: 0.79 };
 
 export const CURRENCIES = [
@@ -25,8 +27,10 @@ export function formatMoneyFromRate(usd, currency = "USD", rate = 1) {
   return symbol + Math.round(value);
 }
 
-/** 服务端组件读货币偏好（cookie: solfit_currency） */
+/** 服务端组件读货币偏好（cookie: solfit_currency；未设回落总后台站点设置） */
 export function getCurrencyFromCookies(cookieStore) {
   const c = cookieStore?.get?.("solfit_currency")?.value;
-  return FX_RATES[c] ? c : "USD";
+  if (FX_RATES[c]) return c;
+  const def = getSiteSettings().defaultCurrency;
+  return FX_RATES[def] ? def : "USD";
 }

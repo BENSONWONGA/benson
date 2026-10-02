@@ -4,7 +4,10 @@
  * 机制：cookie `solfit_lang` 驱动 SSR（与货币/主题同款偏好持久化）。
  * 不引 i18n 框架 —— 文案集中一处、零依赖（自研边界铁律）；
  * Phase 2 迁 /zh /en 路由时本字典成为提取源。
+ * 默认语言回落总后台站点设置（lib/site-settings —— 保持本文件客户端可打包）。
  */
+
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const DEFAULT_LANG = "en";
 export const LANGS = [
@@ -46,8 +49,10 @@ export const HOME_TEXT = {
   },
 };
 
-/** 由 cookie 取语言（非法值回落 en） */
+/** 由 cookie 取语言（非法值回落总后台站点设置的默认语言） */
 export function getLangFromCookies(jar) {
   const v = jar.get("solfit_lang")?.value;
-  return LANGS.some(([code]) => code === v) ? v : DEFAULT_LANG;
+  if (LANGS.some(([code]) => code === v)) return v;
+  const def = getSiteSettings().defaultLang;
+  return LANGS.some(([code]) => code === def) ? def : DEFAULT_LANG;
 }

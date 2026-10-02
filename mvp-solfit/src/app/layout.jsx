@@ -8,6 +8,7 @@ import CookieConsent from "@/components/CookieConsent";
 import WebVitalsReporter from "@/components/WebVitalsReporter";
 import { getThemeFromCookies, themeCss } from "@/lib/themes";
 import { getLangFromCookies } from "@/lib/i18n";
+import { getSiteSettings } from "@/lib/site-settings";
 
 /**
  * 跨境 SEO：hreflang 需在多语言上线时按 locale 展开（方案文档 §6.2）。
@@ -25,12 +26,18 @@ export default function RootLayout({ children }) {
   const theme = getThemeFromCookies(jar);
   const css = themeCss(theme);
   const lang = getLangFromCookies(jar);
+  const settings = getSiteSettings(); // 总后台站点设置（公告栏 / 维护模式）
 
   return (
     <html lang={lang}>
       <body>
         {css ? <style dangerouslySetInnerHTML={{ __html: css }} /> : null}
-        <div className="announce">Free size exchanges on every order — the SOLFIT Fit Guarantee</div>
+        {settings.maintenance ? (
+          <div style={{ background: "#C0392B", color: "#fff", textAlign: "center", fontSize: 12, letterSpacing: "0.06em", padding: "8px 16px" }}>
+            站点维护中 —— 暂停下单，浏览不受影响
+          </div>
+        ) : null}
+        {settings.announcement ? <div className="announce">{settings.announcement}</div> : null}
         <header className="site-header">
           <div className="header-inner">
             <a className="logo" href="/">SOL<em>FIT</em></a>
@@ -67,6 +74,7 @@ export default function RootLayout({ children }) {
             </div>
             <div>
               <p style={{ fontWeight: 700, marginBottom: 8 }}>Operations</p>
+              <p><a href="/admin/master">Master console（总后台）</a></p>
               <p><a href="/admin/merchant">Merchant console</a></p>
               <p><a href="/admin/baseline">Baseline dashboard</a></p>
               <p><a href="/admin/monitoring">Monitoring dashboard</a></p>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdmin, listInventory, restockMany, restockLowSizes } from "@/modules/merchant/service";
+import { auditAdmin } from "@/modules/master/service";
 import { observed } from "@/lib/observe";
 
 /**
@@ -24,10 +25,12 @@ export async function POST(request) {
     try {
       if (body.action === "restock") {
         const result = await restockMany(body.items);
+        auditAdmin("inventory_restocked", `批量补货 ${result.lines} 行 / ${result.qty} 双`, request);
         return NextResponse.json({ code: 0, data: result });
       }
       if (body.action === "restock_low") {
         const result = await restockLowSizes(body.productId, Number(body.target) || 6);
+        auditAdmin("inventory_restocked", `低码补齐 ${result.lines} 行 / ${result.qty} 双`, request);
         return NextResponse.json({ code: 0, data: result });
       }
       return NextResponse.json({ code: 400, message: "Unknown action" }, { status: 400 });

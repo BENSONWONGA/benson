@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/modules/merchant/service";
 import { adminListPromos, adminCreatePromo, adminSetPromoActive } from "@/modules/loyalty/service";
+import { auditAdmin } from "@/modules/master/service";
 import { observed } from "@/lib/observe";
 
 /**
@@ -25,10 +26,12 @@ export async function POST(request) {
     try {
       if (body.action === "create") {
         const promo = adminCreatePromo(body);
+        auditAdmin("promo_created", `优惠码 ${promo.code}（${promo.type === "percent" ? promo.value + "%" : "$" + promo.value}）`, request);
         return NextResponse.json({ code: 0, data: { promo } });
       }
       if (body.action === "activate" || body.action === "deactivate") {
         const promo = adminSetPromoActive(body.code, body.action === "activate");
+        auditAdmin(body.action === "activate" ? "promo_activated" : "promo_deactivated", `优惠码 ${promo.code}`, request);
         return NextResponse.json({ code: 0, data: { promo } });
       }
       return NextResponse.json({ code: 400, message: "Unknown action" }, { status: 400 });

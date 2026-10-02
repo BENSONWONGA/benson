@@ -19,6 +19,7 @@ import {
 } from "@/modules/catalog/service";
 import { restock, getStock } from "@/modules/inventory/service";
 import { syncProductVectors } from "@/ai/recommender/vector-store";
+import { findActiveStaffByToken } from "@/modules/master/service";
 
 const NEW_PRODUCT_STOCK = 6; // 新建商品每码初始库存
 
@@ -39,7 +40,9 @@ function tokensMatch(a, b) {
 export function isAdmin(request) {
   const url = new URL(request.url);
   const token = request.headers.get("x-admin-token") || url.searchParams.get("token");
-  return tokensMatch(token, process.env.ADMIN_TOKEN || "dev-admin-token");
+  if (tokensMatch(token, process.env.ADMIN_TOKEN || "dev-admin-token")) return true;
+  // Phase 22：总后台签发的员工令牌（每请求实时查 —— 总后台吊销即失效）
+  return !!findActiveStaffByToken(token);
 }
 
 // ===== 订单 =====

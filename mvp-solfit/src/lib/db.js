@@ -36,6 +36,8 @@ const _stores = {
   reviews: [],               // 商品评价（Phase 18；已购验证 + 匿名展示；PG: reviews 表）
   promoCodes: new Map(),     // code -> 优惠码定义（Phase 19；PG: promo_codes 表）
   posts: new Map(),          // slug -> 博客文章（Phase 20 SEO 内容；PG: posts 表）
+  staffTokens: new Map(),   // tokenId -> StaffToken（Phase 22 总后台；PG: staff_tokens 表）
+  auditLogs: [],             // 后台审计日志（Phase 22；PG: audit_logs 表，内存留最近 200 条）
 };
 
 export function store(name) {

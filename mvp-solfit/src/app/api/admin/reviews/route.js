@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/modules/merchant/service";
 import { adminRemoveReview } from "@/modules/reviews/service";
+import { auditAdmin } from "@/modules/master/service";
 import { observed } from "@/lib/observe";
 
 /**
@@ -17,6 +18,7 @@ export async function POST(request) {
     try {
       if (body.action === "remove") {
         const removed = adminRemoveReview(body.reviewId);
+        auditAdmin("review_removed", `评价 #${removed.id}（商品 ${removed.productId}）`, request);
         return NextResponse.json({ code: 0, data: { removed: removed.id } });
       }
       return NextResponse.json({ code: 400, message: "Unknown action" }, { status: 400 });

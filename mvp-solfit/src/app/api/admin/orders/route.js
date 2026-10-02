@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdmin, listOrders, markShipped } from "@/modules/merchant/service";
+import { auditAdmin } from "@/modules/master/service";
 import { observed } from "@/lib/observe";
 
 /**
@@ -24,6 +25,7 @@ export async function POST(request) {
     try {
       if (body.action === "mark_shipped") {
         const order = markShipped(body.orderId, { tracking: body.tracking });
+        auditAdmin("order_shipped", `订单 ${order.id}（${order.region ?? "-"}）`, request);
         return NextResponse.json({
           code: 0,
           data: {
