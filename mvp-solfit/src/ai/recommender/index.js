@@ -36,17 +36,28 @@ import { rerankCandidates, rerankStats } from "./rerank";
 import { assignVariant, experimentMeta } from "./experiments";
 import { maybeTrain, logImpression, noteVariant, modelState, variantLift } from "./model";
 import { attributionStats } from "./attribution";
+import { inferRegion, contextBoosts, sessionIntent, noteContext, contextStats } from "./context";
 
-/** 冷启动规则（保留导出：无任何信号时的兜底，也是 Phase 1 的唯一路径） */
+/**
+ * 冷启动规则（Phase 12 兑现 §5.1："热门 + 地区/季节上下文"）：
+ *   热门用 rating 代理（质量热度），上下文 = 地区 ∘ 季节先验（context.js）。
+ *   preferCategory/preferWidth 保留既有契约（首页/Shop 筛选场景）。
+ */
 export function coldStartRecommend({ context = {}, excludeId, max = 4 } = {}) {
   let list = listProducts({ sort: "rating" });
   if (excludeId) list = list.filter((p) => p.id !== Number(excludeId));
   if (context.preferCategory) list = list.filter((p) => p.category === context.preferCategory);
   if (context.preferWidth) list = list.filter((p) => p.widths.includes(context.preferWidth));
+  // 上下文先行，质量兜底：rating 相近的商品按当季/当区先验重排（幅度温和，可被数据覆盖）
+  if (context.boosts && Object.keys(context.boosts).length) {
+    list = [...list].sort(
+      (a, b) => b.rating + (context.boosts[b.category] || 0) - (a.rating + (context.boosts[a.category] || 0))
+    );
+  }
   return list.slice(0, max);
 }
 
-export async function recommend({ sessionId, seedProductId, excludeId, max = 4 } = {}) {
+export async function recommend({ sessionId, seedProductId, excludeId, max = 4, acceptLanguage } = {}) {
   maybeTrain(); // 惰性训练（60s 节流；印象与标注在 events/recTrainingSet 里等待）
 
   const userFeat = userFeatures(sessionId);
@@ -54,9 +65,15 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4 }
   const seedId = seedProductId != null ? Number(seedProductId) : null;
   const exclude = excludeId != null ? Number(excludeId) : null;
 
-  // 无历史且无种子 → 纯冷启动（不值得进流水线，也不进实验）
+  // Phase 12 上下文与意图：地区（订单 > Accept-Language > 默认US）∘ 季节（南北半球）
+  const region = inferRegion({ sessionId, acceptLanguage });
+  const ctx = contextBoosts({ region });
+  const intent = sessionIntent(userFeat);
+  noteContext({ region: ctx.region, season: ctx.season, hemisphere: ctx.hemisphere, intent: intent.mode });
+
+  // 无历史且无种子 → 纯冷启动（不值得进流水线，也不进实验；上下文先验是唯一有效信号）
   if (!hasHistory && !seedId) {
-    const products = coldStartRecommend({ excludeId, max });
+    const products = coldStartRecommend({ context: { boosts: ctx.boosts }, excludeId, max });
     trackEvent("recommend_served", { type: "cold_start", sessionId });
     return products;
   }
@@ -79,7 +96,8 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4 }
     return products;
   }
 
-  const cacheKey = ["rec", sessionId || "anon", variant, seedId ?? 0, exclude ?? 0, max].join(":");
+  // 缓存键含 region：同会话跨地区请求（订单迁移/代理变更）不共享错季结果
+  const cacheKey = ["rec", sessionId || "anon", variant, seedId ?? 0, exclude ?? 0, max, ctx.region].join(":");
   const result = await cacheOrSet(
     cacheKey,
     async () => {
@@ -92,12 +110,12 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4 }
       );
       const candidates = all.filter((p) => !excluded.has(p.id));
       if (!candidates.length) {
-        return { products: coldStartRecommend({ excludeId, max }), source: "cold_start", ranked: [] };
+        return { products: coldStartRecommend({ context: { boosts: ctx.boosts }, excludeId, max }), source: "cold_start", ranked: [] };
       }
 
       const signals = productSignals();
 
-      // 召回：CF（两变体共用）∪ 内容路（baseline=规则 / vector_lr=向量）∪ 热度
+      // 召回：CF（两变体共用）∪ 内容路（baseline=规则 / vector_lr=向量）∪ 当季热度（Phase 12）
       const cfRaw = recallCollaborative(userFeat, sessionInteractions());
       const maxCf = Math.max(0, ...cfRaw.values());
       const cf = new Map([...cfRaw].map(([id, s]) => [id, maxCf ? s / maxCf : 0]));
@@ -106,12 +124,13 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4 }
         variant === "vector_lr"
           ? recallVector({ seed, userFeat, candidates, productsById }) // 种子向量或档案向量
           : recallContent(seed, candidates); // Phase 3 规则内容路（仅种子驱动）
-      const popular = recallPopular(signals, candidates);
+      const popular = recallPopular(signals, candidates, { seasonal: ctx.boosts });
 
       const ranked = rankCandidates(candidates, { cf, content, popular, signals, userFeat });
-      // Phase 10 业务重排：尺码可得性闸 + 类目多样性 + 库存深度 + 探索槽位 ——
+      // Phase 10 业务重排 + Phase 12 意图联动：尺码可得性闸 + 类目多样性 + 库存深度 + 探索槽位；
+      // funnel 关探索（收银台门口不塞广告）、comparing 加深 focus 类目配额 ——
       // 印象落库与返回商品都用重排后的"真实服务序"（学过的必须是播过的）
-      const { items: served, stats: rerank } = rerankCandidates(ranked, { max, userFeat, signals });
+      const { items: served, stats: rerank } = rerankCandidates(ranked, { max, userFeat, signals, intent });
       return {
         products: served.map((r) => ({
           ...r.product,
@@ -136,7 +155,14 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4 }
   return result.products;
 }
 
-/** 推荐服务健康快照 —— 监控看板 / overview API（分流 + 质量门 + 效果回流 + 重排 + 归因） */
+/** 推荐服务健康快照 —— 监控看板 / overview API（分流 + 质量门 + 效果回流 + 重排 + 归因 + 上下文） */
 export function recStats() {
-  return { experiment: experimentMeta(), model: modelState(), lift: variantLift(), rerank: rerankStats(), attribution: attributionStats() };
+  return {
+    experiment: experimentMeta(),
+    model: modelState(),
+    lift: variantLift(),
+    rerank: rerankStats(),
+    attribution: attributionStats(),
+    context: contextStats(),
+  };
 }

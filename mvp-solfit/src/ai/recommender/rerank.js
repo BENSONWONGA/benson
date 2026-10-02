@@ -41,10 +41,13 @@ export function rerankStats() {
 /**
  * 重排主入口
  * @param {[{product, score, features, reasons}]} ranked rank.js 输出（分数降序）
- * @param {{max: number, userFeat: object, signals: Map}} ctx signals: 商品信号（views 供探索槽位）
+ * @param {{max: number, userFeat: object, signals: Map, intent?: object}} ctx
+ *   intent（Phase 12 context.js）：
+ *     funnel   已加购 —— 探索槽关闭（收银台门口不塞广告：用户在决策，不是在发现）
+ *     comparing 比价中 —— focus 类目配额 +1（比较者要深度：同类目多看两双是服务，不是复读）
  * @returns {{items: ranked[], stats: object}} items = 最终服务序（≤ max）
  */
-export function rerankCandidates(ranked, { max = 4, userFeat, signals }) {
+export function rerankCandidates(ranked, { max = 4, userFeat, signals, intent }) {
   const stats = { sizeFiltered: 0, diversityDeferred: 0, exploreSlots: 0, stockAdjusted: 0 };
   const profileSize = userFeat.profile?.recommendation?.size || null;
 
@@ -77,14 +80,17 @@ export function rerankCandidates(ranked, { max = 4, userFeat, signals }) {
   });
   adjusted.sort((a, b) => b.adjScore - a.adjScore);
 
-  // ===== 3) 类目多样性（贪心 + 耗尽回填） =====
-  const cap = Math.max(1, Math.ceil(max / 2)); // max=4 → 每类目最多 2 个
+  // ===== 3) 类目多样性（贪心 + 耗尽回填；Phase 12 意图联动配额） =====
+  const baseCap = Math.max(1, Math.ceil(max / 2)); // max=4 → 每类目最多 2 个
+  const capFor = (cat) =>
+    baseCap + (intent?.mode === "comparing" && cat === intent.focusCategory ? 1 : 0); // 比较者要深度
   const catCount = {};
   const picked = [];
   const deferred = [];
   for (const r of adjusted) {
     const c = r.product.category;
-    if (picked.length < max && (catCount[c] || 0) < cap) {
+    if (picked.length < max && (catCount[c] || 0) < capFor(c)) {
+      if (capFor(c) > baseCap) r.reasons.push("another look in the category you're comparing"); // 可解释：配额为何放宽
       picked.push(r);
       catCount[c] = (catCount[c] || 0) + 1;
     } else if (picked.length < max) {
@@ -98,8 +104,10 @@ export function rerankCandidates(ranked, { max = 4, userFeat, signals }) {
   let di = 0;
   while (picked.length < max && di < deferred.length) picked.push(deferred[di++]);
 
-  // ===== 4) 探索槽位（末位 = 曝光最少的合格候选） =====
-  if (deferred.length > di && picked.length === max && max >= 3) {
+  // ===== 4) 探索槽位（末位 = 曝光最少的合格候选；funnel 意图下关闭） =====
+  if (intent?.mode === "funnel") {
+    // 已加购 = 收银台门口不塞广告：用户在决策不是在发现，末位留给强转化候选
+  } else if (deferred.length > di && picked.length === max && max >= 3) {
     const pool = deferred.slice(di); // 未被选中的合格候选
     if (pool.length) {
       const views = (r) => signals?.get(r.product.id)?.views ?? 0;

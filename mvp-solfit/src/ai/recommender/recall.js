@@ -69,12 +69,17 @@ export function recallContent(seed, candidates) {
   return scores;
 }
 
-/** 全站热度（views + 2×carts + 5×orders） */
-export function recallPopular(signals, candidates, { limit = 12 } = {}) {
+/**
+ * 全站热度（views + 2×carts + 5×orders）—— Phase 12 起为"当季热度"：
+ * 同一热度分在当季类目放大、过季类目衰减（凉鞋的冬季热度多为误流量）。
+ * 先验温和（|boost| ≤ 0.8 → 放大系数 ∈ [0.2, 1.8]），回流数据可覆盖。
+ */
+export function recallPopular(signals, candidates, { limit = 12, seasonal = {} } = {}) {
   const scores = new Map();
   for (const p of candidates) {
     const s = signals.get(p.id);
-    scores.set(p.id, s ? s.views + s.carts * 2 + s.orders * 5 : 0);
+    const base = s ? s.views + s.carts * 2 + s.orders * 5 : 0;
+    scores.set(p.id, Math.max(0, base * (1 + (seasonal[p.category] || 0))));
   }
   return topN(scores, limit);
 }

@@ -21,6 +21,7 @@ export async function GET(request) {
       seedProductId: sp.get("seedId") || undefined,
       excludeId: sp.get("excludeId") || undefined,
       max: Number(sp.get("max")) || 4,
+      acceptLanguage: request.headers.get("accept-language") || undefined, // Phase 12：地区/季节上下文入口
     });
     return NextResponse.json({ code: 0, data: products });
   });
