@@ -37,6 +37,7 @@ import { assignVariant, experimentMeta } from "./experiments";
 import { maybeTrain, logImpression, noteVariant, modelState, variantLift } from "./model";
 import { attributionStats } from "./attribution";
 import { inferRegion, contextBoosts, sessionIntent, noteContext, contextStats } from "./context";
+import { savedIdsOf, hiddenIdsOf, latestSavedProduct, feedbackStats } from "./feedback";
 
 /**
  * 冷启动规则（Phase 12 兑现 §5.1："热门 + 地区/季节上下文"）：
@@ -65,6 +66,10 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4, 
   const seedId = seedProductId != null ? Number(seedProductId) : null;
   const exclude = excludeId != null ? Number(excludeId) : null;
 
+  // Phase 13 显式反馈：不感兴趣 = 全路径硬排除（用户控制权）；心愿单 = 出列但作召回锚
+  const hidden = hiddenIdsOf(sessionId);
+  const saved = savedIdsOf(sessionId);
+
   // Phase 12 上下文与意图：地区（订单 > Accept-Language > 默认US）∘ 季节（南北半球）
   const region = inferRegion({ sessionId, acceptLanguage });
   const ctx = contextBoosts({ region });
@@ -73,7 +78,11 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4, 
 
   // 无历史且无种子 → 纯冷启动（不值得进流水线，也不进实验；上下文先验是唯一有效信号）
   if (!hasHistory && !seedId) {
-    const products = coldStartRecommend({ context: { boosts: ctx.boosts }, excludeId, max });
+    // "不再展示"在冷启动同样生效 —— 用户控制权优先于一切；超采 hidden.size 保证
+    // 隐藏后仍回填满 max 个坑位（被隐藏的是用户的坑位损失，不是推荐位空缺）
+    const products = coldStartRecommend({ context: { boosts: ctx.boosts }, excludeId, max: max + hidden.size })
+      .filter((p) => !hidden.has(p.id))
+      .slice(0, max);
     trackEvent("recommend_served", { type: "cold_start", sessionId });
     return products;
   }
@@ -88,7 +97,11 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4, 
   if (variant === "control") {
     const excludedViewed = new Set([...userFeat.viewed, ...userFeat.ordered, ...userFeat.returned]);
     const pool = listProducts().filter(
-      (p) => !excludedViewed.has(p.id) && p.id !== exclude && p.id !== seedId // 公平对照：同样不推刚看过的/已退换的
+      (p) =>
+        !excludedViewed.has(p.id) &&
+        !hidden.has(p.id) && // 尊重"不再展示"是用户控制不是个性化 —— 对照臂同样生效
+        p.id !== exclude &&
+        p.id !== seedId // 公平对照：同样不推刚看过的/已退换的
     );
     const products = pool.sort((a, b) => b.rating - a.rating).slice(0, max);
     logImpression({ sessionId, variant, ranked: products.map((p) => ({ product: p })), max });
@@ -103,14 +116,21 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4, 
     async () => {
       const all = listProducts();
       const productsById = (id) => all.find((p) => p.id === id);
-      // 候选过滤：排除参数/种子/已看/已购/已退换 —— 宁可少推，不重推用户已拒收的商品
+      // 候选过滤：排除参数/种子/已看/已购/已退换/不感兴趣/心愿单 ——
+      // 心愿单出列（已"捕获"不占坑位）但转入召回锚；不感兴趣是用户亲口的"别推这个"
       const excluded = new Set(
-        [exclude, seedId, ...userFeat.viewed, ...userFeat.carted, ...userFeat.ordered, ...userFeat.returned]
+        [exclude, seedId, ...userFeat.viewed, ...userFeat.carted, ...userFeat.ordered, ...userFeat.returned, ...hidden, ...saved]
           .filter((v) => v !== null && v !== undefined && !Number.isNaN(v))
       );
       const candidates = all.filter((p) => !excluded.has(p.id));
       if (!candidates.length) {
-        return { products: coldStartRecommend({ context: { boosts: ctx.boosts }, excludeId, max }), source: "cold_start", ranked: [] };
+        return {
+          products: coldStartRecommend({ context: { boosts: ctx.boosts }, excludeId, max: max + hidden.size })
+            .filter((p) => !hidden.has(p.id))
+            .slice(0, max),
+          source: "cold_start",
+          ranked: [],
+        };
       }
 
       const signals = productSignals();
@@ -119,11 +139,15 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4, 
       const cfRaw = recallCollaborative(userFeat, sessionInteractions());
       const maxCf = Math.max(0, ...cfRaw.values());
       const cf = new Map([...cfRaw].map(([id, s]) => [id, maxCf ? s / maxCf : 0]));
+      // Phase 13：保存品锚点 —— 无 PDP 种子时，最近保存的心愿单品担任内容召回锚
+      // （save = 未购会话最强的意向声明，比浏览锚定的"为什么推它"清晰两个信噪级）
+      const savedAnchor = !seedId ? latestSavedProduct(sessionId) : null;
       const seed = seedId ? all.find((p) => p.id === seedId) : null;
+      const anchor = seed || savedAnchor;
       const content =
         variant === "vector_lr"
-          ? recallVector({ seed, userFeat, candidates, productsById }) // 种子向量或档案向量
-          : recallContent(seed, candidates); // Phase 3 规则内容路（仅种子驱动）
+          ? recallVector({ seed: anchor, userFeat, candidates, productsById }) // 种子/保存品向量或档案向量
+          : recallContent(anchor, candidates); // Phase 3 规则内容路（种子或保存品驱动）
       const popular = recallPopular(signals, candidates, { seasonal: ctx.boosts });
 
       const ranked = rankCandidates(candidates, { cf, content, popular, signals, userFeat });
@@ -131,6 +155,12 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4, 
       // funnel 关探索（收银台门口不塞广告）、comparing 加深 focus 类目配额 ——
       // 印象落库与返回商品都用重排后的"真实服务序"（学过的必须是播过的）
       const { items: served, stats: rerank } = rerankCandidates(ranked, { max, userFeat, signals, intent });
+      // Phase 13 保存品锚点的可解释性：锚点生效时，高内容分的推荐位溯源到"你保存过的那双"
+      if (savedAnchor) {
+        for (const r of served) {
+          if ((r.features?.content || 0) > 1.5) r.reasons.push(`inspired by the ${savedAnchor.name} you saved`);
+        }
+      }
       return {
         products: served.map((r) => ({
           ...r.product,
@@ -155,7 +185,7 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4, 
   return result.products;
 }
 
-/** 推荐服务健康快照 —— 监控看板 / overview API（分流 + 质量门 + 效果回流 + 重排 + 归因 + 上下文） */
+/** 推荐服务健康快照 —— 监控看板 / overview API（分流 + 质量门 + 效果回流 + 重排 + 归因 + 上下文 + 显式反馈） */
 export function recStats() {
   return {
     experiment: experimentMeta(),
@@ -164,5 +194,6 @@ export function recStats() {
     rerank: rerankStats(),
     attribution: attributionStats(),
     context: contextStats(),
+    feedback: feedbackStats(), // Phase 13：save/dislike 采用量（控制权使用率 = 功能被真实使用的证据）
   };
 }

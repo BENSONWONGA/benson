@@ -47,6 +47,10 @@ export const EVENT_SCHEMA = {
   // ===== 实验治理（Phase 9）=====
   // 裁决审计：promote/kill/concluded —— 看板与告警取数
   experiment_decided: { action: "string", variant: "string", liftPct: "number", decided: "number" },
+  // ===== 显式反馈（Phase 13）=====
+  // 用户亲口的偏好：save = 最强正信号（召回锚），dislike = 唯一真正的负指令（硬排除）
+  product_saved: { sessionId: "string", productId: "number" },
+  product_disliked: { sessionId: "string", productId: "number" },
   // ===== 目录与 RUM（Core Web Vitals，客户端 useReportWebVitals）=====
   catalog_list_viewed: { query: "object" },
   product_api_fetched: { productId: "number" },

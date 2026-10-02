@@ -3,6 +3,7 @@ import { getSessionId, store, trackEvent } from "@/lib/db";
 import { deleteProfile } from "@/modules/customer/service";
 import { cacheDelByPrefix } from "@/lib/cache";
 import { purgeSessionData as purgeMarketingData } from "@/modules/notification/service";
+import { purgeSessionFeedback } from "@/ai/recommender/feedback";
 
 /**
  * GDPR 被遗忘权 — POST /api/privacy/erase
@@ -47,6 +48,12 @@ export async function POST(request) {
   removed.marketingSubscriber = marketing.subscriber;
   removed.marketingLedger = marketing.ledger;
   removed.outboxEmails = marketing.outbox;
+
+  // 显式反馈三清（Phase 13）：心愿单 + 不感兴趣列表 —— 用户偏好画像同样受删除权保护
+  // （product_saved / product_disliked 事件已随上方事件流统一删除）
+  const feedback = purgeSessionFeedback(sessionId);
+  removed.savedItems = feedback.savedItems;
+  removed.hiddenItems = feedback.hiddenItems;
 
   // 本会话个性化推荐缓存立刻失效（否则 60s 内仍返回基于已删数据的推荐）
   await cacheDelByPrefix(`rec:${sessionId}:`);

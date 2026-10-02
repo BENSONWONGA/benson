@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionId, store } from "@/lib/db";
 import { exportSessionData as exportMarketingData } from "@/modules/notification/service";
+import { exportSessionFeedback } from "@/ai/recommender/feedback";
 
 /**
  * GDPR 数据可携带权 — GET /api/privacy/export
@@ -23,6 +24,8 @@ export async function GET(request) {
       recImpressions: store("recTrainingSet").filter((s) => s.sessionId === sessionId),
       // 营销订阅与发送历史（Phase 6）—— 邮箱脱敏，与订单导出口径一致
       marketing: exportMarketingData(sessionId),
+      // 显式反馈：心愿单 + 不感兴趣列表（Phase 13）—— 用户偏好画像同属个人衍生数据
+      feedback: exportSessionFeedback(sessionId),
       orders,
       generatedAt: new Date().toISOString(),
     },
