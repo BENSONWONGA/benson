@@ -116,7 +116,7 @@ export default function MerchantConsole() {
   }
 
   if (!data) return <p className="muted">加载中…</p>;
-  const { stats, orders, inventory, products, promos, posts } = data;
+  const { stats, orders, inventory, products, promos, posts, reviews, customers } = data;
   const toShip = orders.filter((o) => o.status === "paid");
 
   return (
@@ -130,6 +130,8 @@ export default function MerchantConsole() {
           ["catalog", `Catalog (${(products || []).length})`],
           ["promos", `Promos (${(promos || []).length})`],
           ["content", `Content (${(posts || []).length})`],
+          ["reviews", `Reviews (${(reviews || []).length})`],
+          ["customers", `Customers (${(customers || []).length})`],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -446,6 +448,119 @@ export default function MerchantConsole() {
               )}
             </tbody>
           </table>
+        </>
+      )}
+
+      {/* ===== Reviews（评价审核）===== */}
+      {tab === "reviews" && (
+        <>
+          <h3 style={{ margin: "28px 0 4px" }}>Reviews — 已购验证 UGC（删除即回写商品评分聚合）</h3>
+          <p className="muted" style={{ fontSize: 12, margin: "0 0 14px" }}>
+            全部评价均过已购验证（NOT_PURCHASED 拦截在先）；Delete 用于违规内容审核，评分/fitStats 聚合即刻重算。
+          </p>
+          {(reviews || []).length ? (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
+                  <th style={{ padding: "6px 0" }}>Review</th><th>Product</th><th>Rating</th><th>Fit</th><th>Author</th><th>Date</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {reviews.map((r) => (
+                  <tr key={r.id} style={{ borderTop: "1px solid var(--border)" }}>
+                    <td style={{ padding: "8px 0", maxWidth: 320 }}>
+                      {r.title ? <b>{r.title}</b> : <span className="muted">（无标题）</span>}
+                      <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                        {r.body.length > 90 ? r.body.slice(0, 90) + "…" : r.body}
+                      </div>
+                    </td>
+                    <td><a href={`/product/${r.productId}`} target="_blank">{r.productName}</a></td>
+                    <td style={{ color: r.rating >= 4 ? "var(--fit)" : r.rating <= 2 ? "#C0392B" : "#D4880F", fontWeight: 700 }}>
+                      {"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}
+                    </td>
+                    <td className="muted">{r.fit ? r.fit.replace(/_/g, " ") : "—"}</td>
+                    <td className="muted">{r.author}{r.verified ? <span title="已购验证" style={{ color: "var(--fit)" }}> ●</span> : null}</td>
+                    <td className="muted" style={{ fontSize: 11 }}>{fmtTime(r.createdAt)}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <button
+                        className="btn btn-sm btn-outline"
+                        style={{ color: "#C0392B", borderColor: "#C0392B" }}
+                        disabled={busy === `rev-${r.id}`}
+                        onClick={() =>
+                          act("/api/admin/reviews", { action: "remove", reviewId: r.id }, `rev-${r.id}`,
+                            `评价已删除（${r.productName} 评分聚合已重算）`)
+                        }
+                      >
+                        {busy === `rev-${r.id}` ? "…" : "Delete"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="muted">暂无评价 —— 前台买一单后即可评（前台评价表单在商品页底部）</p>
+          )}
+        </>
+      )}
+
+      {/* ===== Customers（会员名册 · CRM）===== */}
+      {tab === "customers" && (
+        <>
+          <h3 style={{ margin: "28px 0 4px" }}>Customers — 会员名册（等级按累计实付派生 · 不可手改）</h3>
+          <p className="muted" style={{ fontSize: 12, margin: "0 0 14px" }}>
+            Member $0 · Silver $300（1.5×积分）· Gold $800（2×）。手动调积分用于客诉补偿/活动奖励 —— 全程埋点可审计。
+          </p>
+          {(customers || []).length ? (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
+                  <th style={{ padding: "6px 0" }}>Customer</th><th>Tier</th><th>Points</th><th>Lifetime spend</th><th>Orders</th><th>Joined</th><th>Adjust points</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.map((c) => (
+                  <tr key={c.id} style={{ borderTop: "1px solid var(--border)" }}>
+                    <td style={{ padding: "8px 0" }}>
+                      <b>{c.name || "—"}</b>
+                      <div className="muted" style={{ fontSize: 11 }}>{c.email}</div>
+                    </td>
+                    <td style={{ fontWeight: 700, color: c.tier === "Gold" ? "#D4880F" : c.tier === "Silver" ? "var(--text-sub)" : undefined }}>
+                      {c.tier}{c.multiplier > 1 ? <span className="muted" style={{ fontSize: 11, fontWeight: 400 }}> · {c.multiplier}×</span> : null}
+                    </td>
+                    <td style={{ fontWeight: 700 }}>{c.points.toLocaleString()}</td>
+                    <td className="muted">${c.lifetimeSpend.toLocaleString()}</td>
+                    <td className="muted">{c.orders}{c.lastOrderAt ? <div style={{ fontSize: 11 }}>{fmtTime(c.lastOrderAt).slice(0, 10)}</div> : null}</td>
+                    <td className="muted" style={{ fontSize: 11 }}>{c.joinedAt.slice(0, 10)}</td>
+                    <td>
+                      <form
+                        style={{ display: "flex", gap: 6, alignItems: "center" }}
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const delta = Number(e.target.elements.delta.value);
+                          if (!delta) return;
+                          act("/api/admin/customers",
+                            { action: "adjust_points", userId: c.id, delta, reason: "console" },
+                            `pts-${c.id}`, `${c.email} 积分 ${delta > 0 ? "+" : ""}${delta} → ${Math.max(0, c.points + delta)}`);
+                          e.target.elements.delta.value = "";
+                        }}
+                      >
+                        <input
+                          name="delta" type="number" placeholder="±500" style={{ width: 76 }}
+                          disabled={busy === `pts-${c.id}`}
+                        />
+                        <button className="btn btn-sm btn-outline" type="submit" disabled={busy === `pts-${c.id}`}>
+                          {busy === `pts-${c.id}` ? "…" : "Apply"}
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="muted">暂无注册会员 —— 前台注册一个账户试试（积分赚取从下单/评价开始）</p>
+          )}
         </>
       )}
     </div>

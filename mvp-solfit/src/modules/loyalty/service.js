@@ -185,3 +185,57 @@ export function awardReviewPoints(sessionId) {
   trackEvent("points_earned", { points: REVIEW_POINTS, reason: "review" });
   return REVIEW_POINTS;
 }
+
+// ===== 商家管理（admin API 调用）=====
+
+/**
+ * 商家视图：会员名册（等级/积分/消费/订单数 —— CRM 看板）。
+ * 订单数从 orders 域读聚合（userId 关联），lifetimeSpend 仍是等级唯一事实源。
+ */
+export function adminListCustomers() {
+  const orderCounts = new Map();
+  for (const o of store("orders").values()) {
+    if (!o.userId) continue;
+    const c = orderCounts.get(o.userId) || { orders: 0, lastOrderAt: null };
+    c.orders++;
+    if (!c.lastOrderAt || o.createdAt > c.lastOrderAt) c.lastOrderAt = o.createdAt;
+    orderCounts.set(o.userId, c);
+  }
+  return [...store("users").values()]
+    .map((u) => {
+      const tier = tierOf(u.lifetimeSpend || 0);
+      const c = orderCounts.get(u.id) || { orders: 0, lastOrderAt: null };
+      return {
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        points: u.points || 0,
+        lifetimeSpend: round2(u.lifetimeSpend || 0),
+        tier: tier.name,
+        multiplier: tier.multiplier,
+        orders: c.orders,
+        lastOrderAt: c.lastOrderAt,
+        joinedAt: u.createdAt,
+      };
+    })
+    .sort((a, b) => (a.joinedAt < b.joinedAt ? 1 : -1));
+}
+
+/**
+ * 商家手动调积分（客诉补偿/活动奖励）。
+ * delta 可负（扣分）；点数不允许扣成负（防御性下限 0）。
+ */
+export function adminAdjustPoints(userId, delta, reason) {
+  const u = store("users").get(userId);
+  if (!u) throw new Error("USER_NOT_FOUND");
+  const d = Math.round(Number(delta));
+  if (!Number.isFinite(d) || d === 0) throw new Error("INVALID_DELTA");
+  if (Math.abs(d) > 100000) throw new Error("DELTA_TOO_LARGE");
+
+  u.points = Math.max(0, (u.points || 0) + d);
+  store("users").set(u.id, u);
+  trackEvent(d > 0 ? "points_earned" : "points_redeemed", {
+    points: Math.abs(d), reason: reason ? String(reason).slice(0, 120) : "admin_adjust",
+  });
+  return { id: u.id, email: u.email, points: u.points };
+}

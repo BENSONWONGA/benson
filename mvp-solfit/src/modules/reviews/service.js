@@ -221,3 +221,37 @@ export function anonymizeUserReviews(userId) {
   }
   return n;
 }
+
+// ===== 商家管理（admin API 调用）=====
+
+/** 商家视图：全量评价（newest first，带商品名 —— 审核/运营看板用） */
+export function adminListReviews() {
+  return [...store("reviews")]
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .map((r) => ({
+      id: r.id,
+      productId: r.productId,
+      productName: productById(r.productId)?.name || `#${r.productId}`,
+      rating: r.rating,
+      title: r.title,
+      body: r.body,
+      fit: r.fit,
+      verified: r.verified,
+      author: r.author,
+      createdAt: r.createdAt,
+    }));
+}
+
+/**
+ * 审核删除（UGC 运营）：删单条 + 聚合回写刷新。
+ * 与 GDPR purge 同一删除路径 —— 但这是商家侧内容审核（垃圾/违规）。
+ */
+export function adminRemoveReview(reviewId) {
+  const list = store("reviews");
+  const idx = list.findIndex((r) => r.id === reviewId);
+  if (idx === -1) throw new Error("REVIEW_NOT_FOUND");
+  const [removed] = list.splice(idx, 1);
+  refreshProductAggregate(removed.productId);
+  trackEvent("review_removed", { reviewId, productId: removed.productId });
+  return removed;
+}
