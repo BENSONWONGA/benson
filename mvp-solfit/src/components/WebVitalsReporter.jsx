@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useReportWebVitals } from "next/app";
+import { useReportWebVitals } from "next/web-vitals";
 import { track } from "@/lib/track";
 
 function VitalsHook() {
