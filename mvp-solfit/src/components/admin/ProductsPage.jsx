@@ -106,9 +106,9 @@ export default function ProductsPage() {
                     <div className="adm-row" style={{ gap: 10, flexWrap: "nowrap" }}>
                       {p.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.image} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 8 }} />
+                        <img src={p.image} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(255,255,255,0.7)" }} />
                       ) : (
-                        <div style={{ width: 44, height: 44, borderRadius: 8, background: "#eef0f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }} className="adm-muted">n/a</div>
+                        <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(120,128,144,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }} className="adm-muted">n/a</div>
                       )}
                       <div>
                         <a href={`/product/${p.id}`} target="_blank" style={{ fontWeight: 700 }}>{p.name}</a>

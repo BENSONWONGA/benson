@@ -1,28 +1,30 @@
-/* SOLFIT MVP — design tokens（与原型契约同源：minimal-light / warm editorial） */
+/* SOLFIT — design tokens（Phase 23 潮流运动方向：黑白高对比 + 荧光绿冲击色） */
 :root {
-  --ink: #211D18;
-  --bg: #F7F3EB;
+  --ink: #0B0B0C;
+  --bg: #F4F4F1;
   --surface: #fff;
-  --border: #E7DFD2;
-  --text-sub: #6E6558;
-  --accent: #A34A2E;
-  --fit: #2F5D46;
-  --fit-soft: #E8F0E9;
-  --fit-text: #234A38;
+  --border: #E6E6E2;
+  --text-sub: #63636B;
+  --accent: #0FA958;
+  --fit: #0FA958;
+  --fit-soft: #E7F8EE;
+  --fit-text: #0A7A40;
+  --volt: #C8F527;                       /* 荧光冲击色 —— 深色区专用（浅底上对比度不足） */
+  --volt-ink: #0B0B0C;                   /* volt 按钮上的文字色 */
   --r-md: 10px;
   --r-lg: 16px;
   --r-pill: 999px;
-  --sh-md: 0 6px 18px rgba(33, 29, 24, 0.1);
-  --font-display: Georgia, "Palatino Linotype", serif;
+  --sh-md: 0 6px 18px rgba(11, 11, 12, 0.1);
+  --font-display: "Helvetica Neue", "Arial Black", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", "PingFang SC", sans-serif;
+  font-family: "Helvetica Neue", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   font-size: 14px; line-height: 1.6; color: var(--ink); background: var(--bg);
 }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
-h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.12; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; }
 
 .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 .section { padding: 56px 0; }
@@ -180,4 +182,110 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.
   .hero, .pdp { grid-template-columns: 1fr; gap: 24px; }
   .product-grid { grid-template-columns: repeat(2, 1fr); }
   .main-nav { display: none; }
+}
+
+/* ============================================================
+   Phase 23 · 潮流运动版式（黑白高对比 + volt 冲击色）
+   首页新结构：ath-hero / marquee / usp / story / steps / faq / news / 新页脚
+   ============================================================ */
+
+/* ===== Hero（全幅战役图 + 左下大字报）===== */
+.ath-hero { position: relative; min-height: 88vh; display: flex; align-items: flex-end; color: #fff; overflow: hidden; }
+.ath-hero-bg { position: absolute; inset: 0; }
+.ath-hero-bg img { width: 100%; height: 100%; object-fit: cover; }
+.ath-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(75deg, rgba(5,5,6,0.86) 0%, rgba(5,5,6,0.55) 45%, rgba(5,5,6,0.15) 100%); }
+.ath-hero-inner { position: relative; z-index: 2; width: 100%; max-width: 1200px; margin: 0 auto; padding: 120px 24px 72px; }
+.ath-tag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: var(--volt-ink); background: var(--volt); padding: 7px 14px; border-radius: 6px; margin-bottom: 18px; }
+.ath-hero h1 { font-size: clamp(46px, 8.5vw, 108px); font-weight: 900; text-transform: uppercase; letter-spacing: -0.03em; color: #fff; max-width: 14ch; }
+.ath-hero .lede { color: rgba(255,255,255,0.82); font-size: 16px; max-width: 56ch; margin: 18px 0 30px; }
+.ath-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-ath { display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 30px; border-radius: var(--r-pill); font-weight: 800; font-size: 15px; letter-spacing: 0.02em; border: none; cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
+.btn-ath-volt { background: var(--volt); color: var(--volt-ink); box-shadow: 0 8px 28px rgba(200, 245, 39, 0.3); }
+.btn-ath-volt:hover { transform: translateY(-2px); }
+.btn-ath-ghost { background: rgba(255,255,255,0.08); color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.5); backdrop-filter: blur(8px); }
+.btn-ath-ghost:hover { background: rgba(255,255,255,0.16); }
+.ath-hero-foot { position: relative; z-index: 2; display: flex; gap: 24px; flex-wrap: wrap; margin-top: 46px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: rgba(255,255,255,0.55); text-transform: uppercase; }
+.ath-hero-foot b { color: var(--volt); margin-right: 6px; }
+
+/* ===== 跑马灯 ===== */
+.marquee { overflow: hidden; background: var(--volt); color: var(--volt-ink); border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); padding: 12px 0; }
+.marquee-track { display: flex; width: max-content; animation: marquee 26s linear infinite; font-family: var(--font-display); font-size: 15px; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; white-space: nowrap; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ===== 区块标题 ===== */
+.sec-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+.sec-eyebrow.on-dark { color: var(--volt); }
+.sec-h2 { font-size: clamp(30px, 4.5vw, 56px); text-transform: uppercase; letter-spacing: -0.02em; margin-bottom: 14px; }
+.ath-sec { padding: 84px 0; }
+.ath-sec--dark { background: #0B0B0C; color: #fff; }
+.ath-sec--dark .lede { color: rgba(255,255,255,0.72); }
+
+/* ===== USP 条 ===== */
+.usp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 28px 0; }
+.usp-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+.usp-cell b { display: block; font-family: var(--font-display); font-size: 15px; font-weight: 900; letter-spacing: 0.02em; margin-bottom: 5px; }
+.usp-cell span { font-size: 12px; color: var(--text-sub); }
+.usp-cell::before { content: ""; display: block; width: 22px; height: 4px; background: var(--volt); margin-bottom: 12px; border-radius: 99px; }
+
+/* ===== 品牌故事 ===== */
+.story-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+.story-media { position: relative; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.14); }
+.story-media img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4/3; }
+.story-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 28px 0 30px; }
+.story-stat b { display: block; font-family: var(--font-display); font-weight: 900; font-size: clamp(30px, 3.6vw, 46px); color: var(--volt); letter-spacing: -0.03em; }
+.story-stat span { font-size: 12px; color: rgba(255,255,255,0.66); display: block; margin-top: 4px; line-height: 1.5; }
+
+/* ===== 三步 Fit Science ===== */
+.steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
+.step-card { background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.14); border-radius: 18px; padding: 26px 24px; position: relative; }
+.step-card .num { font-family: var(--font-display); font-size: 44px; font-weight: 900; color: transparent; -webkit-text-stroke: 1.5px var(--volt); letter-spacing: -0.02em; }
+.step-card b { display: block; font-family: var(--font-display); font-size: 19px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; margin: 14px 0 8px; }
+.step-card p { font-size: 13px; color: rgba(255,255,255,0.68); line-height: 1.7; }
+
+/* ===== FAQ（details 原生手风琴）===== */
+.faq-list { display: grid; gap: 12px; margin-top: 34px; max-width: 860px; }
+.faq-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.faq-item summary { cursor: pointer; padding: 18px 22px; font-weight: 800; font-size: 15px; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: "+"; font-family: var(--font-display); font-weight: 900; font-size: 20px; color: var(--accent); transition: transform 0.15s; }
+.faq-item[open] summary::after { transform: rotate(45deg); }
+.faq-item p { padding: 0 22px 20px; font-size: 14px; color: var(--text-sub); line-height: 1.7; max-width: 72ch; }
+
+/* ===== 订阅带 ===== */
+.news-band { background: #0B0B0C; border-top: 1px solid rgba(255,255,255,0.1); }
+.news-inner { display: flex; align-items: center; justify-content: space-between; gap: 40px; flex-wrap: wrap; padding: 64px 0; }
+.news-inner h2 { font-size: clamp(26px, 3.4vw, 42px); text-transform: uppercase; color: #fff; }
+.news-inner .sub { color: rgba(255,255,255,0.66); font-size: 13px; margin-top: 8px; }
+.news-form { display: flex; gap: 10px; flex: 1 1 360px; max-width: 520px; }
+.news-form input { flex: 1; height: 52px; border-radius: var(--r-pill); border: 1.5px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.07); color: #fff; padding: 0 22px; font-size: 14px; outline: none; }
+.news-form input:focus { border-color: var(--volt); }
+.news-form button { height: 52px; border-radius: var(--r-pill); border: none; background: var(--volt); color: var(--volt-ink); font-weight: 800; padding: 0 28px; cursor: pointer; font-size: 14px; }
+.news-form button:disabled { opacity: 0.6; }
+.news-msg { font-size: 12px; margin-top: 8px; color: var(--volt); width: 100%; }
+
+/* ===== 新页脚 ===== */
+.ath-footer { background: #0B0B0C; color: rgba(255,255,255,0.82); border-top: 1px solid rgba(255,255,255,0.08); }
+.ath-footer .container { max-width: 1200px; padding-top: 56px; padding-bottom: 28px; }
+.ft-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 36px; }
+.ft-brand .logo-ft { font-family: var(--font-display); font-weight: 900; font-size: 26px; color: #fff; letter-spacing: -0.02em; }
+.ft-brand .logo-ft em { font-style: normal; color: var(--volt); }
+.ft-tagline { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 10px; max-width: 34ch; line-height: 1.7; }
+.ft-col b { display: block; font-size: 11px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 14px; }
+.ft-col p { margin-bottom: 9px; font-size: 13px; }
+.ft-col a:hover { color: var(--volt); }
+.ft-bottom { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 44px; padding-top: 20px; font-size: 12px; color: rgba(255,255,255,0.4); }
+
+/* ===== PDP 强化（运动系）===== */
+.pdp h1 { font-size: clamp(30px, 4vw, 46px); text-transform: uppercase; letter-spacing: -0.02em; margin: 6px 0 10px; }
+.pdp .badge { background: var(--volt); color: var(--volt-ink); font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 4px 10px; }
+.pdp .price { font-family: var(--font-display); font-weight: 900; }
+
+@media (max-width: 900px) {
+  .ath-hero { min-height: 76vh; }
+  .ath-hero-inner { padding: 90px 24px 54px; }
+  .usp-grid { grid-template-columns: repeat(2, 1fr); }
+  .story-grid { grid-template-columns: 1fr; gap: 28px; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .ft-grid { grid-template-columns: repeat(2, 1fr); }
+  .news-inner { flex-direction: column; align-items: flex-start; }
 }

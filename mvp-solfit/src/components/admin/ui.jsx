@@ -88,10 +88,8 @@ export const Card = ({ title, small, extra, children, style }) => (
 );
 
 export const Kpi = ({ num, lbl, sub, tone }) => (
-  <div className="adm-kpi">
-    <div className="adm-kpi-num" style={{ color: tone === "ok" ? "#1e7a41" : tone === "err" ? "#b3362a" : tone === "warn" ? "#b06e00" : undefined }}>
-      {num}
-    </div>
+  <div className={`adm-kpi${tone ? ` ${tone}` : ""}`}>
+    <div className="adm-kpi-num">{num}</div>
     <div className="adm-kpi-lbl">{lbl}</div>
     {sub ? <div className="adm-kpi-sub">{sub}</div> : null}
   </div>

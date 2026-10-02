@@ -50,9 +50,9 @@ export default function ImageUpload({ label, value = "", onChange, hint }) {
       <div className="adm-row">
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={value} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, border: "1px solid #e5e8f0" }} />
+          <img src={value} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 12, border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 2px 8px rgba(23,47,97,0.12)" }} />
         ) : (
-          <div style={{ width: 56, height: 56, borderRadius: 8, background: "#eef0f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }} className="adm-muted">无图</div>
+          <div style={{ width: 56, height: 56, borderRadius: 12, background: "rgba(120,128,144,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }} className="adm-muted">无图</div>
         )}
         <button className="adm-btn adm-btn-primary adm-btn-sm" type="button" disabled={busy} onClick={() => inputRef.current?.click()}>
           {busy ? "上传中…" : "本地上传"}
@@ -123,14 +123,15 @@ export function GalleryUpload({ label, value = [], onChange, max = 8 }) {
           {value.map((url, i) => (
             <div key={i} style={{ position: "relative", width: 64, height: 64 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt={`详图 ${i + 1}`} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, border: "1px solid #e5e8f0" }} />
+              <img src={url} alt={`详图 ${i + 1}`} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 12, border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 2px 8px rgba(23,47,97,0.12)" }} />
               <button
                 type="button"
                 onClick={() => remove(i)}
                 title="删除这张"
                 style={{
                   position: "absolute", top: -7, right: -7, width: 20, height: 20, borderRadius: 99,
-                  border: "none", background: "#b3362a", color: "#fff", fontSize: 12, lineHeight: 1, cursor: "pointer",
+                  border: "1px solid rgba(255,59,48,0.4)", background: "rgba(255,59,48,0.92)", color: "#fff", fontSize: 12, lineHeight: 1, cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(215,0,21,0.35)",
                 }}
               >
                 ×
