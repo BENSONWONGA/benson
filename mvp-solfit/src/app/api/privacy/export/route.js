@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionId, store } from "@/lib/db";
+import { exportSessionData as exportMarketingData } from "@/modules/notification/service";
 
 /**
  * GDPR 数据可携带权 — GET /api/privacy/export
@@ -20,6 +21,8 @@ export async function GET(request) {
       trainingSamples: store("fitTrainingSet").filter((s) => s.sessionId === sessionId),
       // 推荐印象样本（Phase 5 学习排序特征快照）—— 同属个人衍生数据，一并导出
       recImpressions: store("recTrainingSet").filter((s) => s.sessionId === sessionId),
+      // 营销订阅与发送历史（Phase 6）—— 邮箱脱敏，与订单导出口径一致
+      marketing: exportMarketingData(sessionId),
       orders,
       generatedAt: new Date().toISOString(),
     },

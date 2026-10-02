@@ -4,6 +4,7 @@ import { pipelineStats } from "@/lib/pipeline";
 import { evaluateAlerts, alertsState } from "@/lib/alerts";
 import { baselineSnapshot } from "@/lib/analytics";
 import { recStats } from "@/ai/recommender";
+import { notificationStats } from "@/modules/notification/service";
 import { store } from "@/lib/db";
 
 /**
@@ -74,6 +75,11 @@ export async function GET(request) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
+  // 营销投递结果累计（Phase 6，由 solfit_marketing_emails_total 聚合）
+  const marketingEmails = (metricsSnapshot().find((m) => m.name === "solfit_marketing_emails_total")?.series ?? [])
+    .map((s) => ({ result: s.labels.result, count: s.value }))
+    .sort((a, b) => b.count - a.count);
+
   return NextResponse.json({
     code: 0,
     data: {
@@ -83,7 +89,8 @@ export async function GET(request) {
       kpis: baselineSnapshot(),
       vitals: rumVitals(),
       alerts: alertsState(),
-      rec: recStats(), // Phase 5：A/B 分流计数 + 学习排序质量门状态
+      rec: recStats(), // Phase 5：A/B 分流 + 质量门；Phase 6：实验 lift 回流
+      marketing: { ...notificationStats(), emails: marketingEmails }, // Phase 6
       generatedAt: new Date().toISOString(),
     },
   });

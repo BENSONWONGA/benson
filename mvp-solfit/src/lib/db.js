@@ -22,6 +22,9 @@ const _stores = {
   events: [],              // 埋点事件缓冲（Phase 4 起由 pipeline 管理，见 registerSink）
   fitTrainingSet: [],       // 换货/退货训练样本（PG: fit_training_set 表，Phase 2 迁移已建）
   recTrainingSet: [],       // 推荐印象样本（Phase 5：印象特征快照 → 回流标注 → 学习排序）
+  emailSubscribers: new Map(), // sessionId -> {email, subscribedAt}（Phase 6 营销订阅，GDPR erase 清除）
+  emailLedger: new Map(),     // sessionId -> {sends[], lastSentAt}（Phase 6 频控账本）
+  outbox: [],                // stub Provider 投递件（Phase 6；GDPR erase 清除）
 };
 
 export function store(name) {

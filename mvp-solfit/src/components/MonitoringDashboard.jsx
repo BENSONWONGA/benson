@@ -54,7 +54,7 @@ export default function MonitoringDashboard() {
   if (error) return <p className="muted">监控数据加载失败：{error}（重试中…）</p>;
   if (!data) return <p className="muted">加载中…</p>;
 
-  const { pipeline, eventsByType, http, kpis, vitals, alerts, rec } = data;
+  const { pipeline, eventsByType, http, kpis, vitals, alerts, rec, marketing } = data;
   const maxEvent = Math.max(1, ...eventsByType.map((e) => e.count));
 
   return (
@@ -134,6 +134,63 @@ export default function MonitoringDashboard() {
           <div className="lbl">
             LR ranker — {fmt(rec?.model?.samples)} labeled / {fmt(rec?.model?.impressions)} impressions
             {rec?.model?.auc !== null && rec?.model?.auc !== undefined ? ` · AUC ${rec.model.auc}` : ""} · {rec?.model?.note}
+          </div>
+        </div>
+      </div>
+
+      {/* ===== 实验效果回流（Phase 6）===== */}
+      {(rec?.lift ?? []).length ? (
+        <>
+          <h3 style={{ margin: "36px 0 16px" }}>Experiment lift — conversion by variant</h3>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
+                <th style={{ padding: "6px 0" }}>Variant</th><th>Impressions</th><th>Decided</th><th>Positives</th><th>CTR</th><th>Lift vs baseline</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rec.lift.map((v) => (
+                <tr key={v.variant} style={{ borderTop: "1px solid var(--border)" }}>
+                  <td style={{ padding: "7px 0", fontFamily: "var(--font-display)" }}>{v.variant}</td>
+                  <td>{fmt(v.impressions)}</td>
+                  <td>{fmt(v.decided)}</td>
+                  <td>{fmt(v.positives)}</td>
+                  <td>{v.ctr === null ? "—" : (v.ctr * 100).toFixed(1) + "%"}</td>
+                  <td style={{ color: v.liftVsBaselinePct > 0 ? "var(--fit)" : v.liftVsBaselinePct < 0 ? LEVEL_COLOR.critical : undefined }}>
+                    {v.liftVsBaselinePct === null || v.liftVsBaselinePct === undefined ? "—" : (v.liftVsBaselinePct > 0 ? "+" : "") + v.liftVsBaselinePct + "%"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : null}
+
+      {/* ===== 营销召回投递（Phase 6）===== */}
+      <h3 style={{ margin: "36px 0 16px" }}>Marketing recovery — abandoned carts</h3>
+      <div className="baseline-kpis" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+        <div className="stat-box">
+          <div className="num">{fmt((marketing?.emails ?? []).find((e) => e.result === "sent")?.count)}</div>
+          <div className="lbl">Emails sent</div>
+        </div>
+        <div className="stat-box">
+          <div className="num" style={{ color: LEVEL_COLOR.warn }}>
+            {fmt((marketing?.emails ?? []).filter((e) => e.result.startsWith("suppressed")).reduce((s, e) => s + e.count, 0))}
+          </div>
+          <div className="lbl">Suppressed (频控/无地址)</div>
+        </div>
+        <div className="stat-box">
+          <div className="num" style={{ color: (marketing?.emails ?? []).find((e) => e.result === "failed")?.count ? LEVEL_COLOR.critical : undefined }}>
+            {fmt((marketing?.emails ?? []).find((e) => e.result === "failed")?.count)}
+          </div>
+          <div className="lbl">Failed</div>
+        </div>
+        <div className="stat-box">
+          <div className="num" style={{ fontSize: 15, paddingTop: 6 }}>{marketing?.provider ?? "—"}
+            <div className="lbl">
+              {fmt(marketing?.sendsToday)}/{fmt(marketing?.limits?.dailyCap)} today ·
+              {" "}{fmt(marketing?.subscribers)} subs · outbox {fmt(marketing?.outboxDepth)}
+            </div>
           </div>
         </div>
       </div>

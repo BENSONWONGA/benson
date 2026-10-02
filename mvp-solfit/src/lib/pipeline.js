@@ -38,6 +38,9 @@ export const EVENT_SCHEMA = {
   // ===== 档案与合规 =====
   fit_profile_saved: { sessionId: "string", recommended: "string" },
   profile_erased: { sessionId: "string", scope: "string" },
+  // ===== 营销回流（Phase 6）=====
+  // 只审计发送结果，收件人地址不落事件（PII —— 存于频控账本，GDPR erase 清除）
+  marketing_email_sent: { sessionId: "string", campaign: "string", result: "string", provider: "string", source: "string" },
   // ===== 目录与 RUM（Core Web Vitals，客户端 useReportWebVitals）=====
   catalog_list_viewed: { query: "object" },
   product_api_fetched: { productId: "number" },

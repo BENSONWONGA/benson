@@ -200,6 +200,45 @@ export function noteVariant(variant) {
   _variantCounts[variant] = (_variantCounts[variant] || 0) + 1;
 }
 
+/**
+ * 实验效果回流（Phase 6）—— 兑现 experiments.js 的承诺"变体写入事件，效果回流可查"：
+ * 按变体聚合已判定印象的转化率（decided = 已回流标注：转化 or 超窗负样本），
+ * 实验组相对 baseline 的 lift% 即灰度决策依据（目录/流量上去后换数仓离线口径）。
+ */
+export function variantLift() {
+  const now = Date.now();
+  const all = store("recTrainingSet");
+  const perVariant = {};
+  for (const s of all) {
+    const v = s.variant || "baseline";
+    const agg = perVariant[v] || (perVariant[v] = { impressions: 0, decided: 0, positives: 0 });
+    agg.impressions++;
+  }
+  for (const s of labelSamples(all, now)) {
+    const agg = perVariant[s.variant || "baseline"];
+    agg.decided++;
+    if (s.y === 1) agg.positives++;
+  }
+  const base = perVariant.baseline;
+  const baseCtr = base && base.decided ? base.positives / base.decided : null;
+  return Object.entries(perVariant)
+    .map(([variant, a]) => {
+      const ctr = a.decided ? a.positives / a.decided : null;
+      return {
+        variant,
+        impressions: a.impressions,
+        decided: a.decided,
+        positives: a.positives,
+        ctr: ctr === null ? null : Math.round(ctr * 1000) / 1000,
+        liftVsBaselinePct:
+          baseCtr && ctr !== null && variant !== "baseline"
+            ? Math.round(((ctr / baseCtr - 1) * 100) * 10) / 10
+            : null,
+      };
+    })
+    .sort((a, b) => a.variant.localeCompare(b.variant));
+}
+
 /** 模型健康快照 —— 监控看板 / overview API */
 export function modelState() {
   return {

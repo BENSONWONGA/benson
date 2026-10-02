@@ -21,15 +21,14 @@
  *   全无           → cold_start（rating 兜底，不进实验）
  */
 
-import { listProducts, getProduct } from "@/modules/catalog/service";
-import { trackEvent, store } from "@/lib/db";
+import { listProducts } from "@/modules/catalog/service";
+import { trackEvent } from "@/lib/db";
 import { cacheOrSet } from "@/lib/cache";
-import { callLLM, llmEnabled } from "@/lib/llm";
 import { userFeatures, productSignals, sessionInteractions } from "./features";
 import { recallCollaborative, recallContent, recallVector, recallPopular } from "./recall";
 import { rankCandidates } from "./rank";
 import { assignVariant, experimentMeta } from "./experiments";
-import { maybeTrain, logImpression, noteVariant, modelState } from "./model";
+import { maybeTrain, logImpression, noteVariant, modelState, variantLift } from "./model";
 
 /** 冷启动规则（保留导出：无任何信号时的兜底，也是 Phase 1 的唯一路径） */
 export function coldStartRecommend({ context = {}, excludeId, max = 4 } = {}) {
@@ -112,84 +111,7 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4 }
   return result.products;
 }
 
-/** 推荐服务健康快照 —— 监控看板 / overview API（A/B 分流 + 模型质量门状态） */
+/** 推荐服务健康快照 —— 监控看板 / overview API（A/B 分流 + 模型质量门 + 实验效果回流） */
 export function recStats() {
-  return { experiment: experimentMeta(), model: modelState() };
-}
-
-/**
- * 弃购召回（Phase 5 兑现 Phase 3 留下的 TODO）：
- *   事件流消费 → 弃购人群（有加购、超窗未下单、购物车仍非空）
- *   → LLM 个性化文案（未配置 LLM 时模板兜底）
- *   → 返回待发名单（channel: email_stub —— Phase 6 接邮件 SaaS 后在此触发发送）
- *
- * GDPR：名单按需实时计算，只含未行使删除权的会话（erase 后 cart/events 均清）。
- */
-export async function abandonedCartHook({ windowMin = 30, max = 20 } = {}) {
-  // 1) 事件流消费：加购会话 / 已下单会话 / 最后活跃时间
-  const cartSids = new Set();
-  const orderedSids = new Set();
-  const lastActivity = new Map();
-  for (const e of store("events")) {
-    const sid = e.payload?.sessionId;
-    if (!sid) continue;
-    if (e.type === "cart_added") {
-      cartSids.add(sid);
-      lastActivity.set(sid, e.ts);
-    }
-    if (e.type === "order_created") orderedSids.add(sid);
-  }
-
-  // 2) 弃购判定：加购 + 超窗未下单 + 购物车仍非空（被清空/删除的不追）
-  const cutoff = Date.now() - windowMin * 60_000;
-  const carts = store("carts");
-  const abandoned = [];
-  for (const sid of cartSids) {
-    if (orderedSids.has(sid)) continue;
-    const cart = carts.get(sid);
-    if (!cart?.items?.length) continue;
-    const lastAt = lastActivity.get(sid);
-    if (new Date(lastAt).getTime() > cutoff) continue; // 仍在活跃决策窗口内 —— 别打扰
-    abandoned.push({ sessionId: sid, cart, lastAt });
-  }
-  abandoned.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
-
-  // 3) 生成个性化召回文案（LLM → 模板兜底），Phase 6 在此接邮件 SaaS 触发
-  const sessions = await Promise.all(
-    abandoned.slice(0, max).map(async ({ sessionId, cart, lastAt }) => ({
-      sessionId,
-      items: cart.items,
-      lastAt,
-      message: await recoveryCopy(cart.items),
-      channel: "email_stub", // TODO(Phase 6): SendGrid/SES API 触发 + 频控防骚扰
-    }))
-  );
-  return { enabled: true, windowMin, count: abandoned.length, sessions };
-}
-
-/** 召回文案 —— LLM 个性化（商品事实来自目录，防幻觉），LLM 不可用/失败走模板 */
-async function recoveryCopy(items) {
-  const products = await Promise.all(items.slice(0, 3).map((i) => getProduct(i.productId)));
-  const names = products.filter(Boolean).map((p) => p.name);
-  if (!names.length) return null;
-
-  if (llmEnabled) {
-    try {
-      const res = await callLLM({
-        messages: [
-          {
-            role: "system",
-            content:
-              "You write abandoned-cart recovery emails for SOLFIT, a premium footwear brand with a free size-exchange guarantee. One short paragraph, warm and concrete. Never invent prices or product facts beyond the given names.",
-          },
-          { role: "user", content: "Cart items: " + names.join(", ") },
-        ],
-        maxTokens: 160,
-        temperature: 0.6,
-      });
-      const text = res?.message?.content?.trim();
-      if (text) return text;
-    } catch { /* LLM 失败 → 模板兜底（AI 绝不阻塞业务） */ }
-  }
-  return `Still thinking it over? Your ${names[0]} is waiting — and with our free size-exchange guarantee, the only risk is missing out.`;
+  return { experiment: experimentMeta(), model: modelState(), lift: variantLift() };
 }

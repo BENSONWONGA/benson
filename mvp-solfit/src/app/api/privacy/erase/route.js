@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionId, store, trackEvent } from "@/lib/db";
 import { deleteProfile } from "@/modules/customer/service";
 import { cacheDelByPrefix } from "@/lib/cache";
+import { purgeSessionData as purgeMarketingData } from "@/modules/notification/service";
 
 /**
  * GDPR 被遗忘权 — POST /api/privacy/erase
@@ -40,6 +41,12 @@ export async function POST(request) {
   for (const o of store("orders").values()) {
     if (o.sessionId === sessionId) { o.sessionId = null; o.email = null; store("orders").set(o.id, o); }
   }
+
+  // 营销数据三清（Phase 6）：订阅 / 频控账本 / stub 发件箱投递件
+  const marketing = purgeMarketingData(sessionId);
+  removed.marketingSubscriber = marketing.subscriber;
+  removed.marketingLedger = marketing.ledger;
+  removed.outboxEmails = marketing.outbox;
 
   // 本会话个性化推荐缓存立刻失效（否则 60s 内仍返回基于已删数据的推荐）
   await cacheDelByPrefix(`rec:${sessionId}:`);
