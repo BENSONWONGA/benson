@@ -47,9 +47,13 @@ export async function createOrder(sessionId, payload) {
     // 3) 创建支付意图（Stripe 真实链路 / demo 直扣）
     const payment = await createPaymentIntent({ orderId, amount: total, currency });
 
+    // Phase 16 账户归属：会话已绑定账户 → 订单落 userId（"我的订单"跨设备可见）
+    const bound = store("userSessions").get(sessionId);
+
     const order = {
       id: orderId,
       sessionId,
+      userId: bound?.userId ?? null,
       email,
       address,
       region: zoneFor(address.country),
@@ -68,6 +72,7 @@ export async function createOrder(sessionId, payload) {
     };
     store("orders").set(order.id, order);
     store("carts").set(sessionId, { items: [] }); // 清购物车
+    if (bound) store("userCarts").delete(bound.userId); // 账户车镜像同清（跨设备不残留已购清单）
     trackEvent("order_created", {
       orderId: order.id, sessionId, region: order.region,
       total: order.totals.total, currency,
@@ -84,6 +89,31 @@ export async function createOrder(sessionId, payload) {
 
 export function getOrder(orderId) {
   return store("orders").get(orderId) || null;
+}
+
+/**
+ * 我的订单（Phase 16）：账户归属单 ∪ 本会话单（游客也能看本会话刚下的单），
+ * 按时间倒序，仅返回列表摘要（明细走 GET ?id=SO-XXX）。
+ */
+export function ordersForUser(sessionId, userId) {
+  const seen = new Set();
+  const list = [];
+  for (const o of store("orders").values()) {
+    const owned = (userId && o.userId === userId) || (sessionId && o.sessionId === sessionId);
+    if (!owned || seen.has(o.id)) continue;
+    seen.add(o.id);
+    list.push({
+      id: o.id,
+      status: o.status,
+      createdAt: o.createdAt,
+      currency: o.currency,
+      total: o.totals?.total ?? null,
+      itemCount: (o.items || []).reduce((s, i) => s + (i.qty || 0), 0),
+      items: (o.items || []).map((i) => ({ productId: i.productId, name: i.name, size: i.size, qty: i.qty })),
+      region: o.region,
+    });
+  }
+  return list.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
 /**

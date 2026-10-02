@@ -4,6 +4,7 @@ import { deleteProfile } from "@/modules/customer/service";
 import { cacheDelByPrefix } from "@/lib/cache";
 import { purgeSessionData as purgeMarketingData } from "@/modules/notification/service";
 import { purgeSessionFeedback } from "@/ai/recommender/feedback";
+import { purgeAccount } from "@/modules/auth/service";
 
 /**
  * GDPR 被遗忘权 — POST /api/privacy/erase
@@ -54,6 +55,13 @@ export async function POST(request) {
   const feedback = purgeSessionFeedback(sessionId);
   removed.savedItems = feedback.savedItems;
   removed.hiddenItems = feedback.hiddenItems;
+
+  // 账户级三清（Phase 16）：用户记录 / 跨设备车 / 反馈 user 键 / 会话绑定；
+  // 订单脱关联（userId+email 置 NULL，财务记录保留）—— 与 sessionId 口径一致
+  const account = purgeAccount(sessionId);
+  removed.account = account.account;
+  removed.userCart = account.userCarts;
+  removed.attributedOrders = account.attributedOrders;
 
   // 本会话个性化推荐缓存立刻失效（否则 60s 内仍返回基于已删数据的推荐）
   await cacheDelByPrefix(`rec:${sessionId}:`);

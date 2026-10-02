@@ -30,6 +30,9 @@ export default function RootLayout({ children }) {
             </nav>
             <div className="header-actions">
               <CurrencySwitcher />
+              <a href="/account" aria-label="My account" style={{ fontSize: 14, fontWeight: 600, marginLeft: 8 }}>
+                Account
+              </a>
               <a href="/cart" aria-label="Open cart" style={{ marginLeft: 8 }}><CartBadge /></a>
             </div>
           </div>

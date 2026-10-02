@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionId, store } from "@/lib/db";
 import { exportSessionData as exportMarketingData } from "@/modules/notification/service";
 import { exportSessionFeedback } from "@/ai/recommender/feedback";
+import { exportAccount } from "@/modules/auth/service";
 
 /**
  * GDPR 数据可携带权 — GET /api/privacy/export
@@ -26,6 +27,9 @@ export async function GET(request) {
       marketing: exportMarketingData(sessionId),
       // 显式反馈：心愿单 + 不感兴趣列表（Phase 13）—— 用户偏好画像同属个人衍生数据
       feedback: exportSessionFeedback(sessionId),
+      // 账户级全量（Phase 16）：画像 + 账户归属订单（跨会话）+ 跨设备车与反馈
+      // —— 兑现 privacy/export 的 TODO："账户体系上线后按 userId 全量导出"
+      account: exportAccount(sessionId),
       orders,
       generatedAt: new Date().toISOString(),
     },

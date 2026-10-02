@@ -24,23 +24,44 @@ import { PRODUCTS } from "@/data/products"; // 纯数据源（不经 catalog ser
 
 const productById = (id) => PRODUCTS.find((p) => p.id === Number(id)) || null;
 
+/** 会话绑定的账户反馈键（"u:<userId>"；游客返回 null —— 写入只落会话键） */
+const userKeyOf = (sessionId) => {
+  const bound = sessionId && store("userSessions").get(sessionId);
+  return bound ? "u:" + bound.userId : null;
+};
+
 /** 心愿单：save / unsave */
 export function saveItem(sessionId, productId) {
   const p = productById(productId);
   if (!sessionId || !p) throw new Error("INVALID_SAVE");
+  const entry = { productId: p.id, savedAt: new Date().toISOString() };
   const list = store("savedItems").get(sessionId) || [];
   if (!list.some((x) => x.productId === p.id)) {
-    list.push({ productId: p.id, savedAt: new Date().toISOString() });
+    list.push(entry);
     store("savedItems").set(sessionId, list);
+    const uKey = userKeyOf(sessionId); // Phase 16 write-through：跨设备心愿单
+    if (uKey) {
+      const userList = store("savedItems").get(uKey) || [];
+      if (!userList.some((x) => x.productId === p.id)) {
+        userList.push(entry);
+        store("savedItems").set(uKey, userList);
+      }
+    }
   }
   trackEvent("product_saved", { sessionId, productId: p.id });
   return getFeedback(sessionId);
 }
 
 export function unsaveItem(sessionId, productId) {
-  const list = store("savedItems").get(sessionId) || [];
-  const next = list.filter((x) => x.productId !== Number(productId));
-  next.length ? store("savedItems").set(sessionId, next) : store("savedItems").delete(sessionId);
+  const pid = Number(productId);
+  const drop = (key) => {
+    const list = store("savedItems").get(key) || [];
+    const next = list.filter((x) => x.productId !== pid);
+    next.length ? store("savedItems").set(key, next) : store("savedItems").delete(key);
+  };
+  drop(sessionId);
+  const uKey = userKeyOf(sessionId);
+  if (uKey) drop(uKey); // 账户侧同删 —— 跨设备不"复活"
   return getFeedback(sessionId);
 }
 
@@ -48,20 +69,61 @@ export function unsaveItem(sessionId, productId) {
 export function dislikeItem(sessionId, productId) {
   const p = productById(productId);
   if (!sessionId || !p) throw new Error("INVALID_DISLIKE");
+  const entry = { productId: p.id, at: new Date().toISOString() };
   const list = store("hiddenItems").get(sessionId) || [];
   if (!list.some((x) => x.productId === p.id)) {
-    list.push({ productId: p.id, at: new Date().toISOString() });
+    list.push(entry);
     store("hiddenItems").set(sessionId, list);
+    const uKey = userKeyOf(sessionId); // Phase 16 write-through
+    if (uKey) {
+      const userList = store("hiddenItems").get(uKey) || [];
+      if (!userList.some((x) => x.productId === p.id)) {
+        userList.push(entry);
+        store("hiddenItems").set(uKey, userList);
+      }
+    }
   }
   trackEvent("product_disliked", { sessionId, productId: p.id });
   return getFeedback(sessionId);
 }
 
 export function undoDislike(sessionId, productId) {
-  const list = store("hiddenItems").get(sessionId) || [];
-  const next = list.filter((x) => x.productId !== Number(productId));
-  next.length ? store("hiddenItems").set(sessionId, next) : store("hiddenItems").delete(sessionId);
+  const pid = Number(productId);
+  const drop = (key) => {
+    const list = store("hiddenItems").get(key) || [];
+    const next = list.filter((x) => x.productId !== pid);
+    next.length ? store("hiddenItems").set(key, next) : store("hiddenItems").delete(key);
+  };
+  drop(sessionId);
+  const uKey = userKeyOf(sessionId);
+  if (uKey) drop(uKey);
   return getFeedback(sessionId);
+}
+
+/**
+ * 登录水合（auth service 调用）：账户反馈列表并入会话列表 ——
+ * 会话键是推荐热路径的事实源（纯 Map 读零开销），水合让任何设备
+ * 登录后立即看到全部历史偏好；此后写入经 write-through 双向同步。
+ */
+export function adoptFeedbackForUser(sessionId, userId) {
+  const mergeInto = (mapName, userEntryExtra) => {
+    const map = store(mapName);
+    const userList = map.get("u:" + userId) || [];
+    if (!userList.length) return 0;
+    const sessionList = map.get(sessionId) || [];
+    let added = 0;
+    for (const item of userList) {
+      if (!sessionList.some((x) => x.productId === item.productId)) {
+        sessionList.push({ ...item, ...userEntryExtra });
+        added++;
+      }
+    }
+    if (sessionList.length) map.set(sessionId, sessionList);
+    return added;
+  };
+  const saved = mergeInto("savedItems");
+  const hidden = mergeInto("hiddenItems");
+  return { saved, hidden };
 }
 
 /** 反馈状态（GET /api/ai/feedback —— 前端徽章态回显） */

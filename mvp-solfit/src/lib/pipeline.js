@@ -51,6 +51,11 @@ export const EVENT_SCHEMA = {
   // 用户亲口的偏好：save = 最强正信号（召回锚），dislike = 唯一真正的负指令（硬排除）
   product_saved: { sessionId: "string", productId: "number" },
   product_disliked: { sessionId: "string", productId: "number" },
+  // ===== 账户域（Phase 16）=====
+  // 只审计事件发生（计数/漏斗），不含 userId/email —— 账户标识在 users 表，
+  // 事件流跨会话不可达（GDPR erase 按会话清事件，账户标识落事件会造成跨会话残留）
+  user_registered: { sessionId: "string" },
+  user_logged_in: { sessionId: "string" },
   // ===== 目录与 RUM（Core Web Vitals，客户端 useReportWebVitals）=====
   catalog_list_viewed: { query: "object" },
   product_api_fetched: { productId: "number" },

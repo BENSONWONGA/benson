@@ -29,6 +29,9 @@ const _stores = {
   experimentDecisions: [],   // 实验治理决策日志 {action, variant, liftPct, allocation, at}（Phase 9）
   savedItems: new Map(),     // sessionId -> [{productId, savedAt}]（Phase 13 心愿单；GDPR erase 清除）
   hiddenItems: new Map(),    // sessionId -> [{productId, at}]（Phase 13 不感兴趣；GDPR erase 清除）
+  users: new Map(),           // userId -> User（Phase 16 账户域；PG: users 表，008 迁移已建）
+  userSessions: new Map(),   // sessionId -> {userId, at}（Phase 16 会话绑定；运行时态不落 PG）
+  userCarts: new Map(),      // userId -> 购物车快照（Phase 16 跨设备合并；PG: user_carts）
 };
 
 export function store(name) {
