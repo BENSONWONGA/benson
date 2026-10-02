@@ -38,6 +38,7 @@ import { maybeTrain, logImpression, noteVariant, modelState, variantLift } from 
 import { attributionStats } from "./attribution";
 import { inferRegion, contextBoosts, sessionIntent, noteContext, contextStats } from "./context";
 import { savedIdsOf, hiddenIdsOf, latestSavedProduct, feedbackStats } from "./feedback";
+import { vectorStoreState } from "./vector-store";
 
 /**
  * 冷启动规则（Phase 12 兑现 §5.1："热门 + 地区/季节上下文"）：
@@ -146,7 +147,7 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4, 
       const anchor = seed || savedAnchor;
       const content =
         variant === "vector_lr"
-          ? recallVector({ seed: anchor, userFeat, candidates, productsById }) // 种子/保存品向量或档案向量
+          ? await recallVector({ seed: anchor, userFeat, candidates, productsById }) // Phase 14：pgvector ANN 优先，内存降级
           : recallContent(anchor, candidates); // Phase 3 规则内容路（种子或保存品驱动）
       const popular = recallPopular(signals, candidates, { seasonal: ctx.boosts });
 
@@ -195,5 +196,6 @@ export function recStats() {
     attribution: attributionStats(),
     context: contextStats(),
     feedback: feedbackStats(), // Phase 13：save/dislike 采用量（控制权使用率 = 功能被真实使用的证据）
+    vectorStore: vectorStoreState(), // Phase 14：ANN 检索面健康（driver/mode/同步时间/最近错误）
   };
 }

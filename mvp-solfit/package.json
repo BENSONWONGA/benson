@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "db:migrate": "node migrations/run.js",
-    "db:seed:generate": "node migrations/tools/generate-seed.mjs"
+    "db:seed:generate": "node migrations/tools/generate-seed.mjs",
+    "db:vector-sync": "node migrations/tools/sync-vectors.mjs"
   },
   "dependencies": {
     "ioredis": "^6.0.0",
