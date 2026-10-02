@@ -50,7 +50,7 @@ function userOf(sessionId) {
 /** 当前会话的会员状态（游客返回 loggedIn:false —— 前端据此引导注册） */
 export function loyaltyStatus(sessionId) {
   const u = userOf(sessionId);
-  if (!u) return { loggedIn: false, points: 0, tier: null, pointsValue: 0 };
+  if (!u) return { loggedIn: false, points: 0, tier: null, pointsValue: 0, referralCode: null };
   const tier = tierOf(u.lifetimeSpend);
   return {
     loggedIn: true,
@@ -60,6 +60,7 @@ export function loyaltyStatus(sessionId) {
     // 抵扣换算与单笔上限（以 $100 订单为例最多抵 $10）
     pointsValue: Math.floor(u.points / POINTS_PER_DOLLAR),
     nextTier: TIERS.find((t) => t.minSpend > u.lifetimeSpend) || null,
+    referralCode: referralCodeOf(u), // 裂变码（账户页邀请卡展示）
   };
 }
 
@@ -68,9 +69,50 @@ export function loyaltyStatus(sessionId) {
 const codeKey = (code) => String(code || "").trim().toUpperCase();
 const CODE_RE = /^[A-Z0-9]{3,20}$/;
 
+// ===== 裂变码（社交获客 · 降低 CAC 的结构性手段）=====
+// REF-XXXXXX：每账户一个专属码（userId 派生，零状态）；好友结算页输入 →
+// 首单 9 折（走统一 validatePromo 计价路径），邀请人 +500 积分（落单结算）。
+// 防自薅：邀请人 = 下单人 → 拒绝（SELF_REFERRAL）。
+
+const REFERRAL_PREFIX = "REF-";
+const REFERRAL_REWARD_POINTS = 500;
+const REFERRAL_DISCOUNT = 0.1;
+const REFERRAL_MIN_SPEND = 30;
+
+/** 派生专属裂变码（uuid 前 6 位 —— 无状态、可重建） */
+function referralCodeOf(u) {
+  return REFERRAL_PREFIX + u.id.replace(/-/g, "").slice(0, 6).toUpperCase();
+}
+
+/** 裂变码反查邀请人 */
+function findUserByRef(key) {
+  const suffix = key.slice(REFERRAL_PREFIX.length).toLowerCase();
+  return [...store("users").values()].find((u) => u.id.replace(/-/g, "").startsWith(suffix)) || null;
+}
+
+/** 防自薅检查（quote 预览与 place 落单共用）：自己码自己用 → SELF_REFERRAL */
+export function checkSelfReferral(sessionId, promo) {
+  if (promo?.type === "referral" && userOf(sessionId)?.id === promo.inviterId) {
+    throw new Error("SELF_REFERRAL");
+  }
+}
+
 /** 验签 + 计价（checkout quote/place 共用；无效码抛错，route 映射 422） */
 export function validatePromo(code, subtotal) {
   const key = codeKey(code);
+
+  // 裂变码分支：不走 promoCodes 表（规则型码），但计价形状与普通码对齐
+  if (key.startsWith(REFERRAL_PREFIX)) {
+    const inviter = findUserByRef(key);
+    if (!inviter) throw new Error("INVALID_PROMO");
+    if (subtotal < REFERRAL_MIN_SPEND) throw new Error("PROMO_MIN_SPEND");
+    return {
+      code: key, discount: round2(subtotal * REFERRAL_DISCOUNT),
+      type: "referral", value: REFERRAL_DISCOUNT * 100,
+      label: "Friend & family — 10% off first order", inviterId: inviter.id,
+    };
+  }
+
   const promo = store("promoCodes").get(key);
   if (!promo || !promo.active) throw new Error("INVALID_PROMO");
   if (promo.expiresAt && Date.now() > new Date(promo.expiresAt).getTime()) throw new Error("PROMO_EXPIRED");
@@ -132,6 +174,7 @@ export function computeCheckoutDiscounts({ sessionId, subtotal, promoCode, point
   let promoDiscount = 0;
   if (promoCode) {
     promo = validatePromo(promoCode, subtotal); // 无效码 → 抛错（INVALID_PROMO 等）
+    checkSelfReferral(sessionId, promo); // 防自薅（积分奖励不可套利）
     promoDiscount = promo.discount;
   }
 
@@ -168,9 +211,20 @@ export function settleOrderLoyalty({ sessionId, orderTotal, promoCode, pointsRed
   store("users").set(u.id, u);
 
   if (promoCode) {
-    const promo = store("promoCodes").get(codeKey(promoCode));
-    if (promo) { promo.usedCount++; store("promoCodes").set(promo.code, promo); }
-    trackEvent("promo_applied", { code: promo.code, discount: promo.discount });
+    const key = codeKey(promoCode);
+    if (key.startsWith(REFERRAL_PREFIX)) {
+      // 裂变结算：邀请人 +500 分（规则型码不走 promoCodes 表）
+      const inviter = findUserByRef(key);
+      if (inviter) {
+        inviter.points = (inviter.points || 0) + REFERRAL_REWARD_POINTS;
+        store("users").set(inviter.id, inviter);
+        trackEvent("referral_rewarded", { points: REFERRAL_REWARD_POINTS });
+      }
+    } else {
+      const promo = store("promoCodes").get(key);
+      if (promo) { promo.usedCount++; store("promoCodes").set(promo.code, promo); }
+      trackEvent("promo_applied", { code: promo.code, discount: promo.discount });
+    }
   }
   if (earned > 0) trackEvent("points_earned", { points: earned, reason: "order" });
   return { earned, tier: tier.id, multiplier: tier.multiplier };

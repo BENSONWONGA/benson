@@ -58,6 +58,7 @@ export default function RootLayout({ children }) {
               <p><a href="/admin/merchant">Merchant console</a></p>
               <p><a href="/admin/baseline">Baseline dashboard</a></p>
               <p><a href="/admin/monitoring">Monitoring dashboard</a></p>
+              <p><a href="/embed/demo">Size widget for brands</a></p>
               <p><a href="/privacy">Privacy &amp; data</a></p>
               <p><a href="/api/analytics/baseline">Baseline API</a></p>
             </div>

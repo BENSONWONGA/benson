@@ -141,9 +141,22 @@ export function merchantStats() {
   let lowStock = 0;
   for (const p of products) for (const s of p.sizes) if (getStock(p.id, s) === 0) lowStock++;
 
+  // 毛利口径（UE 模型核心行）：GMV − Σ(商品成本×数量)；cost 缺失的商品按 40% 兜底
+  const costOf = new Map(products.map((p) => [p.id, p.cost ?? Math.round(p.price * 0.4)]));
+  const gmv = Math.round(settled.reduce((s, o) => s + (o.totals?.total || 0), 0) * 100) / 100;
+  const cogs = Math.round(
+    settled.reduce(
+      (s, o) => s + (o.items || []).reduce((cs, i) => cs + (costOf.get(Number(i.productId)) || 0) * i.qty, 0),
+      0,
+    ) * 100,
+  ) / 100;
+
   return {
     orders: orders.length,
-    gmvUsd: Math.round(settled.reduce((s, o) => s + (o.totals?.total || 0), 0) * 100) / 100,
+    gmvUsd: gmv,
+    cogsUsd: cogs,
+    marginUsd: Math.round((gmv - cogs) * 100) / 100,
+    marginPct: gmv > 0 ? Math.round(((gmv - cogs) / gmv) * 100) : 0,
     toShip: orders.filter((o) => o.status === "paid").length,
     shipped: orders.filter((o) => o.status === "shipped").length,
     afterSales: orders.filter((o) => o.status === "exchanged" || o.status === "returned").length,

@@ -42,11 +42,13 @@ export const EVENT_SCHEMA = {
   review_created: { productId: "number", rating: "number", verified: "boolean" },
   // ===== 会员/积分/优惠码（loyalty 域 · Phase 19）=====
   points_earned: { points: "number", reason: "string" },
+  referral_rewarded: { points: "number" }, // 裂变奖励（社交获客闭环审计）
   promo_applied: { code: "string", discount: "number" },
   promo_created: { code: "string", type: "string", value: "number" },
   // ===== 内容与试鞋（content/tryon 域 · Phase 20；文章正文/照片不落管道）=====
   post_published: { slug: "string", published: "boolean" },
   content_generated: { mode: "string", source: "string" }, // AIGC 产线审计（人审前的草稿生成）
+  embed_size_found: { recommended: "boolean" }, // 嵌入式尺码组件转化（B2B widget 计量）
   ai_foot_scan: { confidence: "number", model: "string" },
   // ===== AI 服务 =====
   ai_size_recommended: { profile: "object", size: "string", width: "string", confidence: "number" },

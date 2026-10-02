@@ -22,6 +22,7 @@ const PROMO_HINTS = {
   PROMO_EXPIRED: "This code has expired.",
   PROMO_EXHAUSTED: "This code has been fully redeemed.",
   PROMO_MIN_SPEND: "Order subtotal below this code's minimum spend.",
+  SELF_REFERRAL: "You can't redeem your own referral code — share it with a friend.",
 };
 
 export default function CheckoutClient({ currency = "USD" }) {

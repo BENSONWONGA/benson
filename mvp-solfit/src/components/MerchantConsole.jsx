@@ -158,8 +158,13 @@ export default function MerchantConsole() {
       {/* ===== Overview ===== */}
       {tab === "overview" && (
         <>
-          <div className="baseline-kpis" style={{ gridTemplateColumns: "repeat(6, 1fr)", margin: "20px 0 8px" }}>
+          <div className="baseline-kpis" style={{ gridTemplateColumns: "repeat(4, 1fr)", margin: "20px 0 8px" }}>
             <div className="stat-box"><div className="num">${stats.gmvUsd.toLocaleString()}</div><div className="lbl">GMV (USD)</div></div>
+            <div className="stat-box">
+              <div className="num">${(stats.marginUsd ?? 0).toLocaleString()}</div>
+              <div className="lbl">Gross margin (COGS ${ (stats.cogsUsd ?? 0).toLocaleString() })</div>
+            </div>
+            <div className="stat-box"><div className="num">{stats.marginPct ?? 0}%</div><div className="lbl">Margin rate</div></div>
             <div className="stat-box"><div className="num">{stats.orders}</div><div className="lbl">Orders</div></div>
             <div className="stat-box"><div className="num" style={{ color: toShip.length ? "#D4880F" : undefined }}>{stats.toShip}</div><div className="lbl">To ship</div></div>
             <div className="stat-box"><div className="num" style={{ color: "var(--fit)" }}>{stats.shipped}</div><div className="lbl">Shipped</div></div>

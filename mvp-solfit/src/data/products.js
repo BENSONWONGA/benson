@@ -12,6 +12,7 @@ export const PRODUCTS = [
   {
     id: 1, slug: "aurora-loafer", name: "The Aurora Loafer", category: "Loafers", heel: "Flat",
     widths: ["Standard", "Wide"], price: 118, compareAt: null, currency: "USD",
+    cost: 48,                                      // 采购+履约成本（毛利口径：merchantStats GMV/COGS）
     rating: 4.8, reviewsCount: 1243, badge: "Bestseller",
     fitStats: { small: 9, true: 85, large: 6 },     // 退货数据回流产物（V3 模型燃料）
     sizes: ["36", "37", "38", "39", "40", "41", "42"], oos: ["36"],
@@ -23,6 +24,7 @@ export const PRODUCTS = [
   {
     id: 2, slug: "cloud-walker-sneaker", name: "Cloud Walker Sneaker", category: "Sneakers", heel: "Flat",
     widths: ["Standard"], price: 98, compareAt: 128, currency: "USD",
+    cost: 39,
     rating: 4.9, reviewsCount: 2867, badge: "Bestseller",
     fitStats: { small: 6, true: 90, large: 4 },
     sizes: ["36", "37", "38", "39", "40", "41", "42"], oos: [],
@@ -34,6 +36,7 @@ export const PRODUCTS = [
   {
     id: 3, slug: "emmeline-block-heel", name: "Emmeline Block Heel", category: "Heels", heel: "Mid",
     widths: ["Standard", "Wide"], price: 132, compareAt: null, currency: "USD",
+    cost: 54,
     rating: 4.6, reviewsCount: 489, badge: "New",
     fitStats: { small: 14, true: 78, large: 8 },
     sizes: ["36", "37", "38", "39", "40", "41"], oos: ["37"],
@@ -45,6 +48,7 @@ export const PRODUCTS = [
   {
     id: 4, slug: "trail-breeze-slip-on", name: "Trail Breeze Slip-On", category: "Sneakers", heel: "Flat",
     widths: ["Standard", "Wide"], price: 89, compareAt: null, currency: "USD",
+    cost: 36,
     rating: 4.7, reviewsCount: 932, badge: null,
     fitStats: { small: 8, true: 84, large: 8 },
     sizes: ["36", "37", "38", "39", "40", "41", "42"], oos: [],
@@ -56,6 +60,7 @@ export const PRODUCTS = [
   {
     id: 5, slug: "marina-sandal", name: "Marina Strappy Sandal", category: "Sandals", heel: "Flat",
     widths: ["Standard"], price: 79, compareAt: null, currency: "USD",
+    cost: 33,
     rating: 4.5, reviewsCount: 611, badge: null,
     fitStats: { small: 12, true: 80, large: 8 },
     sizes: ["36", "37", "38", "39", "40", "41"], oos: ["41"],
@@ -67,6 +72,7 @@ export const PRODUCTS = [
   {
     id: 6, slug: "onyx-court-sneaker", name: "Onyx Court Sneaker", category: "Sneakers", heel: "Low",
     widths: ["Standard"], price: 108, compareAt: null, currency: "USD",
+    cost: 44,
     rating: 4.7, reviewsCount: 1388, badge: null,
     fitStats: { small: 11, true: 82, large: 7 },
     sizes: ["36", "37", "38", "39", "40", "41", "42"], oos: [],
@@ -78,6 +84,7 @@ export const PRODUCTS = [
   {
     id: 7, slug: "willow-wide-loafer", name: "Willow Wide Loafer", category: "Loafers", heel: "Flat",
     widths: ["Wide"], price: 115, compareAt: null, currency: "USD",
+    cost: 46,
     rating: 4.9, reviewsCount: 734, badge: "Wide Fit",
     fitStats: { small: 4, true: 92, large: 4 },
     sizes: ["36", "37", "38", "39", "40", "41", "42"], oos: [],
@@ -89,6 +96,7 @@ export const PRODUCTS = [
   {
     id: 8, slug: "studio-mary-jane", name: "Studio Mary Jane", category: "Heels", heel: "Low",
     widths: ["Standard", "Wide"], price: 102, compareAt: 118, currency: "USD",
+    cost: 41,
     rating: 4.6, reviewsCount: 401, badge: null,
     fitStats: { small: 13, true: 81, large: 6 },
     sizes: ["36", "37", "38", "39", "40", "41"], oos: [],
@@ -100,6 +108,7 @@ export const PRODUCTS = [
   {
     id: 9, slug: "voyage-chelsea-boot", name: "Voyage Chelsea Boot", category: "Boots", heel: "Low",
     widths: ["Standard", "Wide"], price: 148, compareAt: null, currency: "USD",
+    cost: 60,
     rating: 4.8, reviewsCount: 655, badge: "New",
     fitStats: { small: 10, true: 83, large: 7 },
     sizes: ["36", "37", "38", "39", "40", "41", "42"], oos: ["42"],
@@ -111,6 +120,7 @@ export const PRODUCTS = [
   {
     id: 10, slug: "haven-wool-mule", name: "Haven Wool Mule", category: "Slippers", heel: "Flat",
     widths: ["Standard", "Wide"], price: 68, compareAt: null, currency: "USD",
+    cost: 28,
     rating: 4.7, reviewsCount: 1022, badge: null,
     fitStats: { small: 15, true: 79, large: 6 },
     sizes: ["36", "37", "38", "39", "40", "41"], oos: [],

@@ -5,7 +5,7 @@ import { getProduct } from "@/modules/catalog/service";
 import { methodsFor, getMethod } from "@/modules/shipping/service";
 import { quoteTax } from "@/modules/tax/service";
 import { createOrder } from "@/modules/order/service";
-import { validatePromo } from "@/modules/loyalty/service";
+import { validatePromo, checkSelfReferral } from "@/modules/loyalty/service";
 import { FX_RATES } from "@/lib/currency";
 import { observed } from "@/lib/observe";
 
@@ -36,6 +36,7 @@ async function quoteFor(sessionId, country, promoCode) {
   if (promoCode) {
     try {
       const v = validatePromo(promoCode, subtotal);
+      checkSelfReferral(sessionId, v); // 自薅软报错（place 会硬拦 —— 预览口径与落单一致）
       promo = { code: v.code, label: v.label, discount: v.discount };
       promoDiscount = v.discount;
     } catch (err) {
@@ -98,7 +99,7 @@ export async function POST(request) {
     } catch (err) {
       // 折扣类错误（无效码/门槛/积分不足）→ 422：可修正的结算输入错误
       const LOYALTY_ERRORS = ["INVALID_PROMO", "PROMO_EXPIRED", "PROMO_EXHAUSTED", "PROMO_MIN_SPEND",
-        "PROMO_EXISTS", "INSUFFICIENT_POINTS", "LOGIN_REQUIRED_FOR_POINTS", "POINTS_CAP_REACHED"];
+        "PROMO_EXISTS", "SELF_REFERRAL", "INSUFFICIENT_POINTS", "LOGIN_REQUIRED_FOR_POINTS", "POINTS_CAP_REACHED"];
       const status = err.message === "OUT_OF_STOCK" ? 409 : LOYALTY_ERRORS.includes(err.message) ? 422 : 400;
       return NextResponse.json({ code: status, message: err.message, details: err.details }, { status });
     }

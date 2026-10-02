@@ -61,6 +61,24 @@ export default async function AccountPage() {
         </div>
       ) : null}
 
+      {/* ===== 邀请卡（裂变获客）：好友首单 9 折 · 你得 500 积分 ===== */}
+      {loyalty.referralCode ? (
+        <div className="product-card" style={{ padding: 18, marginTop: 16, display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+          <div>
+            <span className="badge">Give $-10%, get 500 pts</span>
+            <p className="muted" style={{ fontSize: 13, margin: "10px 0 0", maxWidth: 380, lineHeight: 1.6 }}>
+              Share your code — your friend gets 10% off their first order, you earn <b style={{ color: "var(--fit)" }}>+500 points</b> when it ships. They enter it in the promo field at checkout.
+            </p>
+          </div>
+          <div style={{ marginLeft: "auto", textAlign: "right" }}>
+            <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>Your referral code</div>
+            <div className="mono" style={{ fontSize: 22, fontWeight: 800, letterSpacing: 1, padding: "8px 14px", border: "1px dashed var(--border)", borderRadius: 10, background: "#EFE8DC" }}>
+              {loyalty.referralCode}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* ===== 我的订单 ===== */}
       <h2 style={{ fontSize: 20, margin: "40px 0 12px" }}>Orders</h2>
       {orders.length === 0 ? (
