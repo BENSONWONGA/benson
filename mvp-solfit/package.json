@@ -1,0 +1,22 @@
+{
+  "name": "mvp-solfit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SOLFIT 鞋业跨境 B2C AI 独立站 — MVP 骨架（模块化单体业务域 + 独立 AI 服务层）",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:migrate": "node migrations/run.js",
+    "db:seed:generate": "node migrations/tools/generate-seed.mjs",
+    "db:vector-sync": "node migrations/tools/sync-vectors.mjs"
+  },
+  "dependencies": {
+    "ioredis": "^6.0.0",
+    "next": "14.2.5",
+    "pg": "^8.23.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "stripe": "^23.0.0"
+  }
+}

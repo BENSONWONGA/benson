@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Shop SOLFIT — AI-fitted loafers, sneakers, heels and boots. Filter by category, width and heel. Every pair covered by the Fit Guarantee.">
+<title>Shop all — SOLFIT</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="shop">
+
+<!-- ===== canonical app shell (frozen — identical on every page) ===== -->
+<div class="announce">Free size exchanges on every order — the <b>SOLFIT Fit Guarantee</b> &middot; Ships to 40+ countries</div>
+<header class="site-header">
+  <div class="header-inner">
+    <button class="icon-btn nav-toggle" id="navToggle" aria-label="Open menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+    </button>
+    <a class="logo" href="index.html" aria-label="SOLFIT home">SOL<span class="mark">FIT</span></a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="index.html#why" data-nav="why">Why SOLFIT</a>
+      <a href="index.html#fit-science" data-nav="fit-science">Fit Science</a>
+      <a href="index.html#reviews" data-nav="reviews">Reviews</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" id="searchBtn" aria-label="Search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
+      <button class="icon-btn" id="accountBtn" aria-label="Account">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
+      <button class="icon-btn" id="cartBtn" aria-label="Open cart">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobileNav" aria-label="Mobile navigation">
+    <a href="shop.html" data-nav="shop">Shop</a>
+    <a href="index.html#why" data-nav="why">Why SOLFIT</a>
+    <a href="index.html#fit-science" data-nav="fit-science">Fit Science</a>
+    <a href="index.html#reviews" data-nav="reviews">Reviews</a>
+  </nav>
+</header>
+
+<main>
+  <div class="container">
+    <a class="backlink" href="index.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><path d="m9 18 6-6-6-6"/></svg>
+      Home
+    </a>
+  </div>
+  <section class="shop-head">
+    <div class="container reveal">
+      <div class="eyebrow eyebrow--accent">The collection</div>
+      <h1 class="h2" style="font-size:var(--fs-40)">Every pair, fitted to you.</h1>
+      <p class="lede">Ten styles, three lasts, zero guesswork. Filter by width or heel — or just tell the Fit Stylist what the day demands and let it do the narrowing.</p>
+    </div>
+  </section>
+
+  <div class="shop-layout">
+    <aside class="filter-panel" aria-label="Filters">
+      <div class="filter-group">
+        <h4>Category</h4>
+        <div class="chip-row">
+          <button class="chip active" type="button" data-filter-category="All">All</button>
+          <button class="chip" type="button" data-filter-category="Loafers">Loafers</button>
+          <button class="chip" type="button" data-filter-category="Sneakers">Sneakers</button>
+          <button class="chip" type="button" data-filter-category="Heels">Heels</button>
+          <button class="chip" type="button" data-filter-category="Sandals">Sandals</button>
+          <button class="chip" type="button" data-filter-category="Boots">Boots</button>
+          <button class="chip" type="button" data-filter-category="Slippers">Slippers</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <h4>Width</h4>
+        <div class="chip-row">
+          <button class="chip active" type="button" data-filter-width="All">All</button>
+          <button class="chip chip--fit" type="button" data-filter-width="Standard">Standard</button>
+          <button class="chip chip--fit" type="button" data-filter-width="Wide">Wide</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <h4>Heel height</h4>
+        <div class="chip-row">
+          <button class="chip active" type="button" data-filter-heel="All">All</button>
+          <button class="chip" type="button" data-filter-heel="Flat">Flat</button>
+          <button class="chip" type="button" data-filter-heel="Low">Low</button>
+          <button class="chip" type="button" data-filter-heel="Mid">Mid</button>
+        </div>
+      </div>
+      <div class="filter-group" style="border-bottom:none">
+        <h4>Not sure where to start?</h4>
+        <p class="muted" style="font-size:var(--fs-12);margin-bottom:12px">Let the Size Finder put you in the right pair in 60 seconds.</p>
+        <a class="btn btn-fit btn-sm" href="product.html?id=1&amp;finder=1">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.7a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3Z"/></svg>
+          Find my size
+        </a>
+      </div>
+    </aside>
+
+    <div>
+      <div class="shop-toolbar">
+        <span class="count" id="shopCount">10 styles</span>
+        <label style="display:flex;align-items:center;gap:8px">
+          <span class="muted" style="font-size:var(--fs-12)">Sort</span>
+          <select class="sort-select" id="sortSelect" aria-label="Sort products">
+            <option value="featured">Featured</option>
+            <option value="price-asc">Price: low to high</option>
+            <option value="price-desc">Price: high to low</option>
+            <option value="rating">Top rated</option>
+          </select>
+        </label>
+      </div>
+      <div class="product-grid" id="shopGrid"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ===== footer (frozen — identical on every page) ===== -->
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo">SOL<span class="mark">FIT</span></div>
+      <p class="footer-note">The pair that fits, guaranteed. AI-fitted footwear built on 120,000+ real foot profiles. Prototype demo — no real transactions are processed.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="shop.html">All shoes</a></li>
+        <li><a href="shop.html?category=Loafers">Loafers</a></li>
+        <li><a href="shop.html?category=Sneakers">Sneakers</a></li>
+        <li><a href="shop.html?category=Heels">Heels</a></li>
+        <li><a href="shop.html?width=Wide">Wide fit</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Fit &amp; Help</h4>
+      <ul>
+        <li><a href="index.html#why">Fit Guarantee</a></li>
+        <li><a href="index.html#fit-science">Fit Science</a></li>
+        <li><a href="product.html?id=1&amp;finder=1">Start the Size Finder</a></li>
+        <li><a href="index.html#reviews">Reviews</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="index.html#story">Our story</a></li>
+        <li><a href="mailto:hello@solfit.demo">Contact us</a></li>
+      </ul>
+      <form class="newsletter-row" id="footerNewsForm">
+        <input type="email" id="footerNewsInput" placeholder="Email for restock alerts" aria-label="Email for restock alerts">
+        <button class="btn btn-primary btn-sm" type="submit">Join</button>
+      </form>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2026 SOLFIT Demo &middot; Cross-border duties &amp; taxes calculated at checkout (stubbed)</span>
+    <div class="pay-pills"><span class="pay-pill">VISA</span><span class="pay-pill">MASTERCARD</span><span class="pay-pill">AMEX</span><span class="pay-pill">PAYPAL</span><span class="pay-pill">KLARNA</span></div>
+  </div>
+</footer>
+
+<!-- ===== Fit Stylist chat (frozen — identical on every page) ===== -->
+<button class="chat-fab" id="chatFab" aria-label="Open Fit Stylist chat">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+  <span class="dot"></span>
+</button>
+<div class="chat-panel" id="chatPanel" role="dialog" aria-label="Fit Stylist chat">
+  <div class="chat-head">
+    <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.7a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3Z"/></svg></span>
+    <div class="t"><b>Fit Stylist</b><span><i class="on"></i>AI concierge — demo mode</span></div>
+    <button id="chatClose" aria-label="Close chat">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+  <div class="chat-log" id="chatLog"></div>
+  <div class="chat-chips" id="chatChips"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="Ask about a pair, a size, an occasion…" aria-label="Message the Fit Stylist">
+    <button class="chat-send" id="chatSend" aria-label="Send message">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ===== cart drawer (frozen — identical on every page) ===== -->
+<div class="drawer-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
+  <div class="cart-head">
+    <h3 class="h3">Your cart</h3>
+    <button class="icon-btn" id="cartClose" aria-label="Close cart">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-empty" id="cartEmpty">
+    <div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+    <p>Your cart is empty — your feet deserve better.</p>
+  </div>
+  <div class="ship-progress" id="shipProgress">
+    <span id="shipLabel">You're $120 away from free express shipping</span>
+    <div class="bar"><i id="shipBar"></i></div>
+  </div>
+  <div class="cart-foot" id="cartFoot">
+    <div class="subtotal-row"><span>Subtotal</span><span id="cartSubtotal">$0</span></div>
+    <p class="hint">Duties &amp; taxes calculated at checkout. Fit Guarantee applies to every pair.</p>
+    <button class="btn btn-primary btn-block" id="checkoutBtn" type="button">Checkout securely</button>
+  </div>
+</aside>
+
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<script src="mock.js"></script>
+<script src="api.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

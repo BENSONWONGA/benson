@@ -1,0 +1,266 @@
+/**
+ * components/ProductClient — PDP 交互岛（客户端）
+ * 1) 宽窄/尺码选择 + 加购 → POST /api/cart
+ * 2) AI Size Finder 向导 → 问卷（/api/ai/size-recommendation）
+ *    或拍照量脚（/api/ai/foot-scan · V2 骨架：照片+卡片参照 / 卷尺实测）
+ * 档案沉淀在服务端（modules/customer），刷新后仍预选
+ */
+
+"use client";
+
+import { useEffect, useState } from "react";
+import { track } from "@/lib/track";
+
+export default function ProductClient({ product }) {
+  const [width, setWidth] = useState(product.widths[0]);
+  const [size, setSize] = useState(null);
+  const [qty, setQty] = useState(1);
+  const [toast, setToast] = useState(null);
+  const [finderOpen, setFinderOpen] = useState(false);
+  const [finderStep, setFinderStep] = useState("form"); // form | scan | scanning | result
+  const [rec, setRec] = useState(null);
+  const [scanPreview, setScanPreview] = useState(null); // 照片本地预览（不上传到任何存储）
+
+  const notify = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2600);
+  };
+
+  // 商品浏览埋点（漏斗第一级，consent 闸门内 —— lib/track）
+  useEffect(() => {
+    track("product_viewed", { productId: product.id, category: product.category });
+  }, [product.id]);
+
+  // 已保存的脚型档案 → 进站预选（GET 回读，含楦型校验结果）
+  useEffect(() => {
+    fetch("/api/ai/size-recommendation")
+      .then((r) => r.json())
+      .then((json) => {
+        const saved = json.data;
+        // 只回显"本商品"的档案结果（档案在 POST 时以 productId 维度落楦型校验）
+        if (saved?.recommendation && Number(saved.productId) === Number(product.id)) {
+          setRec(saved.recommendation);
+        }
+      })
+      .catch(() => {});
+  }, [product.id]);
+
+  async function addToCart() {
+    if (!size) { notify("Pick a size first — or let the AI choose"); return; }
+    const res = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "add", productId: product.id, size, width, qty }),
+    });
+    const json = await res.json();
+    if (json.code === 0) {
+      window.dispatchEvent(new Event("solfit:cart"));
+      notify(`Added — EU ${size} · ${width}`);
+    } else {
+      notify(json.message || "Failed to add");
+    }
+  }
+
+  async function submitFinder(e) {
+    e.preventDefault();
+    const form = new FormData(e.target);
+    setFinderStep("scanning");
+    const res = await fetch("/api/ai/size-recommendation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        usualSize: form.get("usualSize"),
+        usualBrand: form.get("usualBrand"),
+        widthFeel: form.get("widthFeel"),
+        footNotes: form.getAll("footNotes"),
+        productId: product.id, // 落楦型校验：finalSize / exactMatch
+      }),
+    });
+    const json = await res.json();
+    setRec(json.data);
+    setFinderStep("result");
+  }
+
+  /** 拍照量脚（V2 骨架）：FormData → /api/ai/foot-scan（照片不落库） */
+  async function submitScan(e) {
+    e.preventDefault();
+    const f = e.target.elements;
+    const fd = new FormData();
+    if (f.photo.files[0]) fd.append("photo", f.photo.files[0]);
+    fd.append("productId", product.id);
+    if (f.manualLengthCm.value) fd.append("manualLengthCm", f.manualLengthCm.value);
+    if (f.manualWidthCm.value) fd.append("manualWidthCm", f.manualWidthCm.value);
+    setFinderStep("scanning");
+    const res = await fetch("/api/ai/foot-scan", { method: "POST", body: fd });
+    const json = await res.json();
+    if (json.code === 0) {
+      setRec(json.data);
+      setFinderStep("result");
+    } else {
+      setFinderStep("scan");
+      notify(json.message || "Scan failed");
+    }
+  }
+
+  return (
+    <div>
+      <div>
+        <div className="option-label">Width</div>
+        {product.widths.map((w) => (
+          <label key={w} style={{ marginRight: 10, fontSize: 13, cursor: "pointer" }}>
+            <input type="radio" name="width" checked={width === w} onChange={() => setWidth(w)} /> {w}
+          </label>
+        ))}
+      </div>
+
+      <div className="option-label" style={{ display: "flex", justifyContent: "space-between" }}>
+        <span>Size (EU)</span>
+        <button className="btn btn-fit btn-sm" onClick={() => { setFinderOpen(true); setFinderStep("form"); }}>
+          Find my size with AI
+        </button>
+      </div>
+      <div className="size-grid">
+        {product.sizes.map((s) => {
+          const oos = product.oos.includes(s);
+          const isAi = rec && rec.finalSize === s;
+          return (
+            <button
+              key={s}
+              type="button"
+              disabled={oos}
+              className={"size-cell" + (size === s ? " active" : "") + (oos ? " oos" : "") + (isAi ? " ai-pick" : "")}
+              onClick={() => setSize(s)}
+            >
+              EU {s}
+            </button>
+          );
+        })}
+      </div>
+      {rec && !rec.exactMatch ? (
+        <p className="muted" style={{ marginTop: 10 }}>
+          Your profile suggests EU {rec.size}; this last runs full sizes only — EU {rec.finalSize} is closest.
+        </p>
+      ) : null}
+
+      <div className="pdp-buy">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button className="btn btn-outline btn-sm" onClick={() => setQty(Math.max(1, qty - 1))}>–</button>
+          <span style={{ fontWeight: 700 }}>{qty}</span>
+          <button className="btn btn-outline btn-sm" onClick={() => setQty(qty + 1)}>+</button>
+        </div>
+        <button className="btn btn-primary" onClick={addToCart}>Add to cart — Fit Guarantee included</button>
+      </div>
+
+      {finderOpen ? (
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setFinderOpen(false)}>
+          <div className="modal">
+            <button className="close" onClick={() => setFinderOpen(false)}>✕</button>
+            <h3>AI Size Finder</h3>
+
+            {finderStep === "form" ? (
+              <form className="finder-form" onSubmit={submitFinder}>
+                <div style={{ marginBottom: 14, padding: 12, border: "1px dashed var(--border)", borderRadius: 10 }}>
+                  <b style={{ fontSize: 13 }}>Faster: photograph your foot</b>
+                  <p className="muted" style={{ fontSize: 12, margin: "6px 0 10px" }}>
+                    Stand on paper with a credit card beside your foot — we read the measurements from one photo.
+                  </p>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setFinderStep("scan")}>
+                    Scan with a photo →
+                  </button>
+                </div>
+                <div>
+                  <label htmlFor="usualSize">Your usual size (EU)</label>
+                  <select id="usualSize" name="usualSize" required>
+                    <option value="">Select…</option>
+                    {["36","36.5","37","37.5","38","38.5","39","39.5","40","40.5","41","41.5","42"].map((s) => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="usualBrand">Brand you usually wear</label>
+                  <select id="usualBrand" name="usualBrand" required>
+                    <option value="">Select…</option>
+                    {["Nike", "Adidas", "New Balance", "Vionic", "Other"].map((b) => <option key={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label>Forefoot feel in that brand</label>
+                  <label><input type="radio" name="widthFeel" value="Narrow" /> Room to spare</label>{" "}
+                  <label><input type="radio" name="widthFeel" value="Standard" defaultChecked /> Just right</label>{" "}
+                  <label><input type="radio" name="widthFeel" value="Wide" /> Tight &amp; pinches</label>
+                </div>
+                <div>
+                  <label>Fit notes (optional)</label>
+                  {["High arch", "Flat feet", "Bunion"].map((n) => (
+                    <label key={n} style={{ marginRight: 10 }}><input type="checkbox" name="footNotes" value={n} /> {n}</label>
+                  ))}
+                </div>
+                <button className="btn btn-fit" type="submit">Scan &amp; find my size</button>
+                <p className="muted">No photo? The questionnaire alone works — it cross-checks your usual brands.</p>
+              </form>
+            ) : null}
+
+            {finderStep === "scan" ? (
+              <form className="finder-form" onSubmit={submitScan}>
+                <div>
+                  <label htmlFor="photo">Foot photo (credit card beside your foot)</label>
+                  <input
+                    id="photo" name="photo" type="file" accept="image/png,image/jpeg,image/gif"
+                    capture="environment"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      setScanPreview(file ? URL.createObjectURL(file) : null);
+                    }}
+                    required
+                  />
+                  {scanPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={scanPreview} alt="Foot preview" style={{ marginTop: 8, width: "100%", maxHeight: 180, objectFit: "contain", borderRadius: 10, border: "1px solid var(--border)" }} />
+                  ) : null}
+                  <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    Stand on paper, card lengthwise beside your heel, shoot straight from above. Photo is analyzed and discarded — never stored.
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="manualLengthCm">Measured length in cm (optional — beats the camera)</label>
+                  <input id="manualLengthCm" name="manualLengthCm" type="number" step="0.1" min="18" max="35" placeholder="e.g. 25.4" />
+                  <label htmlFor="manualWidthCm" style={{ marginTop: 8 }}>Measured width in cm (optional)</label>
+                  <input id="manualWidthCm" name="manualWidthCm" type="number" step="0.1" min="7" max="14" placeholder="e.g. 9.8" />
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn btn-outline btn-sm" type="button" onClick={() => setFinderStep("form")}>← Back</button>
+                  <button className="btn btn-fit" type="submit">Scan my foot</button>
+                </div>
+              </form>
+            ) : null}
+
+            {finderStep === "scanning" ? <p style={{ padding: 40, textAlign: "center" }}>Analyzing 13 measurement points…</p> : null}
+
+            {finderStep === "result" && rec ? (
+              <div className="finder-result">
+                <div className="eyebrow">Your SOLFIT size</div>
+                <div className="size">EU {rec.finalSize}</div>
+                <div className="conf">{rec.confidence}% fit confidence · {rec.width} width</div>
+                {rec.measurements ? (
+                  <p className="muted" style={{ fontSize: 12 }}>
+                    {rec.measurements.lengthCm} cm × {rec.measurements.widthCm} cm
+                    {rec.source === "manual" ? " · tape-measured" : rec.source === "photo" ? " · photo scan (skeleton — verify before you buy)" : ""}
+                  </p>
+                ) : null}
+                <p>{rec.reason}</p>
+                <p className="muted">Last {product.lastCode} adjustment: {rec.productAdjustment?.note}</p>
+                <button
+                  className="btn btn-fit"
+                  onClick={() => { setSize(rec.finalSize); setFinderOpen(false); notify("Recommended size applied"); }}
+                >
+                  Apply this size
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {toast ? <div className="toast">{toast}</div> : null}
+    </div>
+  );
+}
