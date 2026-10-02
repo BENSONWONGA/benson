@@ -11,14 +11,15 @@
  */
 
 import { cookies } from "next/headers";
+import { emit, registerSink, noteDiscarded } from "@/lib/pipeline";
 
 // 进程内存储（dev / 骨架演示用；多实例部署时必须替换）
 const _stores = {
   carts: new Map(),        // sessionId -> { items: [{productId, size, width, qty}] }
   fitProfiles: new Map(),  // sessionId -> FitProfile（Phase 3 迁移为账户级 + 欧盟分区）
   orders: new Map(),       // orderId -> Order
-  inventory: new Map(),    // "productId:size" -> qty（modules/inventory 管理）
-  events: [],              // 埋点事件缓冲（TODO: 换 Kafka producer）
+  inventory: new Map(),     // "productId:size" -> qty（modules/inventory 管理）
+  events: [],              // 埋点事件缓冲（Phase 4 起由 pipeline 管理，见 registerSink）
   fitTrainingSet: [],       // 换货/退货训练样本（PG: fit_training_set 表，Phase 2 迁移已建）
 };
 
@@ -27,14 +28,23 @@ export function store(name) {
   return _stores[name];
 }
 
+// 事件管道 sink：内存缓冲 —— analytics 基线 / 推荐特征 / 换货回流从这里读
+// （Kafka 等外部 sink 由 pipeline 自行注册；本 sink 保证零依赖开箱可跑）
+registerSink("memory-buffer", (event) => {
+  const buf = _stores.events;
+  buf.push(event);
+  if (buf.length > 1000) {
+    buf.shift(); // 骨架期防溢出（Phase 5 落数仓后缓冲由 Kafka 承接）
+    noteDiscarded("overflow");
+  }
+});
+
 /**
- * 埋点事件写入 —— AI 闭环的燃料入口
- * TODO(Phase 2): 换成 Kafka producer，topic: solfit.events
- * 现在就要把事件埋对（见方案文档 §7.3）：浏览/加购/下单/退货/换码/尺码推荐展示
+ * 埋点事件写入 —— AI 闭环的燃料入口（Phase 4 起走统一管道：schema 校验 → 指标 → sinks）
+ * 签名不变：调用方（各业务域 service / AI 服务）零改动。
  */
 export function trackEvent(type, payload) {
-  _stores.events.push({ type, payload, ts: new Date().toISOString() });
-  if (_stores.events.length > 1000) _stores.events.shift(); // 骨架期防溢出
+  emit(type, payload);
 }
 
 /**

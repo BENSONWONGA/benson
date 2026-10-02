@@ -3,6 +3,7 @@ import StylistChat from "@/components/StylistChat";
 import CartBadge from "@/components/CartBadge";
 import CurrencySwitcher from "@/components/CurrencySwitcher";
 import CookieConsent from "@/components/CookieConsent";
+import WebVitalsReporter from "@/components/WebVitalsReporter";
 
 /**
  * 跨境 SEO：hreflang 需在多语言上线时按 locale 展开（方案文档 §6.2）
@@ -51,6 +52,7 @@ export default function RootLayout({ children }) {
             <div>
               <p style={{ fontWeight: 700, marginBottom: 8 }}>Operations</p>
               <p><a href="/admin/baseline">Baseline dashboard</a></p>
+              <p><a href="/admin/monitoring">Monitoring dashboard</a></p>
               <p><a href="/privacy">Privacy &amp; data</a></p>
               <p><a href="/api/analytics/baseline">Baseline API</a></p>
             </div>
@@ -58,6 +60,7 @@ export default function RootLayout({ children }) {
         </footer>
         <StylistChat />
         <CookieConsent />
+        <WebVitalsReporter />
       </body>
     </html>
   );

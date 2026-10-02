@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrder, applyExchange } from "@/modules/order/service";
 import { getSessionId } from "@/lib/db";
+import { observed } from "@/lib/observe";
 
 /**
  * 下单统一走 POST /api/checkout（金额服务端计算），本路由只负责查询与换货回流。
@@ -11,25 +12,29 @@ import { getSessionId } from "@/lib/db";
  */
 
 export async function GET(request) {
-  const id = request.nextUrl.searchParams.get("id");
-  const order = id && getOrder(id);
-  if (!order) return NextResponse.json({ code: 404, message: "not found" }, { status: 404 });
-  return NextResponse.json({ code: 0, data: order });
+  return observed("orders", async () => {
+    const id = request.nextUrl.searchParams.get("id");
+    const order = id && getOrder(id);
+    if (!order) return NextResponse.json({ code: 404, message: "not found" }, { status: 404 });
+    return NextResponse.json({ code: 0, data: order });
+  });
 }
 
 export async function PUT(request) {
-  const sessionId = getSessionId();
-  const body = await request.json().catch(() => null);
-  if (!body?.orderId) return NextResponse.json({ code: 400, message: "orderId is required" }, { status: 400 });
+  return observed("orders", async () => {
+    const sessionId = getSessionId();
+    const body = await request.json().catch(() => null);
+    if (!body?.orderId) return NextResponse.json({ code: 400, message: "orderId is required" }, { status: 400 });
 
-  const order = getOrder(body.orderId);
-  if (!order) return NextResponse.json({ code: 404, message: "order not found" }, { status: 404 });
-  if (order.sessionId !== sessionId) return NextResponse.json({ code: 403, message: "not your order" }, { status: 403 });
+    const order = getOrder(body.orderId);
+    if (!order) return NextResponse.json({ code: 404, message: "order not found" }, { status: 404 });
+    if (order.sessionId !== sessionId) return NextResponse.json({ code: 403, message: "not your order" }, { status: 403 });
 
-  try {
-    const updated = await applyExchange(body.orderId, body);
-    return NextResponse.json({ code: 0, data: updated });
-  } catch (err) {
-    return NextResponse.json({ code: 400, message: err.message }, { status: 400 });
-  }
+    try {
+      const updated = await applyExchange(body.orderId, body);
+      return NextResponse.json({ code: 0, data: updated });
+    } catch (err) {
+      return NextResponse.json({ code: 400, message: err.message }, { status: 400 });
+    }
+  });
 }

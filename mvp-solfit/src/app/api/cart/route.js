@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionId, trackEvent } from "@/lib/db";
 import { getCart, addToCart, updateQty, removeItem, cartTotals } from "@/modules/cart/service";
 import { getProduct } from "@/modules/catalog/service";
+import { observed } from "@/lib/observe";
 
 /** 商品信息富化 —— 购物车返回结构 {items:[{...item, product:{id,name,price,image}}], totals} */
 async function hydrate(cart) {
@@ -14,9 +15,11 @@ async function hydrate(cart) {
 
 /** GET /api/cart — 当前会话购物车（含跨境费用估算） */
 export async function GET(request) {
-  const sessionId = getSessionId();
-  const cart = await hydrate(getCart(sessionId));
-  return NextResponse.json({ code: 0, data: { ...cart, totals: await cartTotals(sessionId) } });
+  return observed("cart", async () => {
+    const sessionId = getSessionId();
+    const cart = getCart(sessionId);
+    return NextResponse.json({ code: 0, data: { ...await hydrate(cart), totals: await cartTotals(sessionId) } });
+  });
 }
 
 /**
@@ -24,18 +27,20 @@ export async function GET(request) {
  * body: {action: "add"|"update"|"remove", ...payload}
  */
 export async function POST(request) {
-  const sessionId = getSessionId();
-  const body = await request.json().catch(() => ({}));
-  try {
-    let cart;
-    if (body.action === "add") cart = await addToCart(sessionId, body);
-    else if (body.action === "update") cart = updateQty(sessionId, body.index, body.qty);
-    else if (body.action === "remove") cart = removeItem(sessionId, body.index);
-    else cart = getCart(sessionId);
+  return observed("cart", async () => {
+    const sessionId = getSessionId();
+    const body = await request.json().catch(() => ({}));
+    try {
+      let cart;
+      if (body.action === "add") cart = await addToCart(sessionId, body);
+      else if (body.action === "update") cart = updateQty(sessionId, body.index, body.qty);
+      else if (body.action === "remove") cart = removeItem(sessionId, body.index);
+      else cart = getCart(sessionId);
 
-    if (body.action) trackEvent(body.action === "add" ? "cart_added" : "cart_updated", { sessionId, action: body.action });
-    return NextResponse.json({ code: 0, data: { ...await hydrate(cart), totals: await cartTotals(sessionId) } });
-  } catch (err) {
-    return NextResponse.json({ code: 400, message: err.message }, { status: 400 });
-  }
+      if (body.action) trackEvent(body.action === "add" ? "cart_added" : "cart_updated", { sessionId, action: body.action });
+      return NextResponse.json({ code: 0, data: { ...await hydrate(cart), totals: await cartTotals(sessionId) } });
+    } catch (err) {
+      return NextResponse.json({ code: 400, message: err.message }, { status: 400 });
+    }
+  });
 }

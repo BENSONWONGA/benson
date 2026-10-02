@@ -6,6 +6,7 @@ import { methodsFor, getMethod } from "@/modules/shipping/service";
 import { quoteTax } from "@/modules/tax/service";
 import { createOrder } from "@/modules/order/service";
 import { FX_RATES } from "@/lib/currency";
+import { observed } from "@/lib/observe";
 
 /**
  * POST /api/checkout — 结算报价与下单（金额全部服务端计算，前端只展示）
@@ -32,15 +33,16 @@ async function quoteFor(sessionId, country) {
 }
 
 export async function POST(request) {
-  const sessionId = getSessionId();
-  const body = await request.json().catch(() => ({}));
+  return observed("checkout", async () => {
+    const sessionId = getSessionId();
+    const body = await request.json().catch(() => ({}));
 
-  const cart = getCart(sessionId);
-  if (!cart.items.length) {
-    return NextResponse.json({ code: 400, message: "Cart is empty" }, { status: 400 });
-  }
+    const cart = getCart(sessionId);
+    if (!cart.items.length) {
+      return NextResponse.json({ code: 400, message: "Cart is empty" }, { status: 400 });
+    }
 
-  try {
+    try {
     if (body.action === "quote") {
       const q = await quoteFor(sessionId, body.address?.country);
       return NextResponse.json({ code: 0, data: q });
@@ -75,8 +77,9 @@ export async function POST(request) {
     }
 
     return NextResponse.json({ code: 400, message: "Unknown action" }, { status: 400 });
-  } catch (err) {
-    const status = err.message === "OUT_OF_STOCK" ? 409 : 400;
-    return NextResponse.json({ code: status, message: err.message, details: err.details }, { status });
-  }
+    } catch (err) {
+      const status = err.message === "OUT_OF_STOCK" ? 409 : 400;
+      return NextResponse.json({ code: status, message: err.message, details: err.details }, { status });
+    }
+  });
 }
