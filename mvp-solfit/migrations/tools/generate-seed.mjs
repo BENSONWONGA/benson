@@ -26,7 +26,8 @@ const { PRODUCTS } = await import(
 );
 
 const q = (s) => "'" + String(s).replace(/'/g, "''") + "'";
-const arr = (a) => "ARRAY[" + a.map(q).join(",") + "]";
+// 全部数组显式 ::text[] 转型 —— PG 对空数组字面量 ARRAY[] 无法推断类型
+const arr = (a) => "ARRAY[" + a.map(q).join(",") + "]::text[]";
 const num = (v) => (v === null || v === undefined ? "NULL" : String(v));
 
 const rows = PRODUCTS.map(
