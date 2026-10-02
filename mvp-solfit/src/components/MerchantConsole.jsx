@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const TOKEN_KEY = "solfit_admin_token";
 const POLL_MS = 10000;
@@ -33,6 +33,9 @@ export default function MerchantConsole() {
   const [tab, setTab] = useState("overview");
   const [formOpen, setFormOpen] = useState(false); // Catalog：新建/编辑表单开关
   const [editing, setEditing] = useState(null);    // Catalog：正在编辑的商品（null=新建）
+  const postFormRef = useRef(null);                // Content：发布表单（AI 草稿回填目标）
+  const [genBusy, setGenBusy] = useState(false);   // Content：AI 生成中
+  const [genSource, setGenSource] = useState(null); // Content：草稿来源徽标（llm/template）
 
   useEffect(() => {
     const saved = sessionStorage.getItem(TOKEN_KEY);
@@ -380,7 +383,7 @@ export default function MerchantConsole() {
         </>
       )}
 
-      {/* ===== Content（Phase 20：SEO 内容运营）===== */}
+      {/* ===== Content（Phase 20：SEO 内容运营 · Phase 2+：AIGC 流水线）===== */}
       {tab === "content" && (
         <>
           <h3 style={{ margin: "28px 0 4px" }}>Content — 期刊文章（SEO 长尾词入口，Article JSON-LD 自动注入）</h3>
@@ -388,7 +391,62 @@ export default function MerchantConsole() {
             新建即发布（slug 冲突自动加后缀）；Unpublish 后文章即刻退出前台与 sitemap。正文用空行分段。
           </p>
 
+          {/* AI 草稿生成器 —— 人审流水线：生成只回填表单，编辑后才可发布 */}
           <form
+            className="product-card"
+            style={{ padding: 18, marginBottom: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end", borderColor: "var(--fit)" }}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const topic = e.target.elements.topic.value;
+              const productId = e.target.elements.productId.value;
+              if (!topic) return;
+              setGenBusy(true);
+              setGenSource(null);
+              try {
+                const res = await fetch("/api/ai/content/generate", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "x-admin-token": token },
+                  body: JSON.stringify({ mode: "seo_post", topic, productId: productId || undefined }),
+                });
+                const body = await res.json();
+                if (body.code !== 0) throw new Error(body.message);
+                const d = body.data;
+                const f = postFormRef.current.elements; // 回填发布表单 —— 商家编辑（人审）后手动 Publish
+                f.title.value = d.title;
+                f.excerpt.value = d.excerpt;
+                f.tags.value = (d.tags || []).join(", ");
+                f.body.value = d.body;
+                setGenSource(d.source);
+                setNotice(`AI 草稿已生成（${d.source === "llm" ? "LLM" : "模板兜底"}）—— 请审校下方表单后发布`);
+                window.scrollTo(0, 0);
+              } catch (err) {
+                setError(err.message);
+              } finally {
+                setGenBusy(false);
+              }
+            }}
+          >
+            <div style={{ flex: "3 1 280px" }}>
+              <label>AI draft — topic / long-tail keyword</label>
+              <input name="topic" placeholder="how to clean suede shoes" required />
+            </div>
+            <div style={{ flex: "1 1 180px" }}>
+              <label>Focus product (optional)</label>
+              <select name="productId" defaultValue="">
+                <option value="">Auto-match</option>
+                {(products || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <button className="btn btn-sm btn-primary" type="submit" disabled={genBusy}>
+              {genBusy ? "Generating…" : "Generate draft"}
+            </button>
+            <p className="muted" style={{ width: "100%", margin: 0, fontSize: 11 }}>
+              人审铁律：生成结果只回填下方表单，审校/改写后才发布（内容质量挂钩退货率与站点 E-E-A-T）。未配 LLM_API_KEY 时走模板兜底。
+            </p>
+          </form>
+
+          <form
+            ref={postFormRef}
             className="product-card"
             style={{ padding: 18, marginBottom: 16, display: "grid", gap: 10 }}
             onSubmit={(e) => {
@@ -408,9 +466,16 @@ export default function MerchantConsole() {
             <div><label>Excerpt (≤200 chars, meta description)</label><input name="excerpt" placeholder="Optional — auto-generated from body if empty" /></div>
             <div><label>Cover image URL</label><input name="cover" placeholder="https://…" /></div>
             <div><label>Body (blank line = new paragraph)</label><textarea name="body" rows={5} placeholder="Write the guide…" required style={{ width: "100%", fontFamily: "inherit" }} /></div>
-            <button className="btn btn-sm btn-primary" type="submit" disabled={busy === "post-save"}>
-              {busy === "post-save" ? "…" : "Publish article"}
-            </button>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              {genSource && (
+                <span className="chip" style={{ fontSize: 11, padding: "3px 10px", background: "var(--fit)", color: "#fff", border: "none" }}>
+                  {genSource === "llm" ? "AI draft · 审校后发布" : "模板草稿 · 可再生成"}
+                </span>
+              )}
+              <button className="btn btn-sm btn-primary" type="submit" disabled={busy === "post-save"}>
+                {busy === "post-save" ? "…" : "Publish article"}
+              </button>
+            </div>
           </form>
 
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
