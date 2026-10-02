@@ -15,7 +15,7 @@ Never use: "revolutionary", "game-changing", "unlock", exclamation marks, or gen
  * @returns {{title, bullets[], meta}} — 输出结构化字段而非整篇 HTML，便于人审与字段级上线
  */
 export async function generateProductCopy(productId, locale = "en-US") {
-  const product = getProduct(productId);
+  const product = await getProduct(productId);
   if (!product) throw new Error("PRODUCT_NOT_FOUND");
 
   if (!llmEnabled) {

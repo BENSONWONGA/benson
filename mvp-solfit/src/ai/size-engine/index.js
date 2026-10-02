@@ -55,8 +55,8 @@ export function recommendSize(profile) {
  * 将推荐结果落到具体楦型 —— 让 AI 推荐与商品事实双向校验
  * 例：Emmeline(H1) runs small => 宽脚推荐自动 +0.5 码
  */
-export function recommendSizeForProduct(profile, productId) {
-  const product = getProduct(productId);
+export async function recommendSizeForProduct(profile, productId) {
+  const product = await getProduct(productId);
   if (!product) throw new Error("PRODUCT_NOT_FOUND");
   const rec = recommendSize(profile);
   const last = LAST_LIBRARY[product.lastCode] || { runs: "true" };

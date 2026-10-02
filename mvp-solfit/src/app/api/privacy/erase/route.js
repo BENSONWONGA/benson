@@ -9,7 +9,7 @@ import { deleteProfile } from "@/modules/customer/service";
  * 前端 erase 后同时清 localStorage（solfit_fit_profile 等）。
  */
 export async function POST(request) {
-  const sessionId = getSessionId(request.cookies);
+  const sessionId = getSessionId();
   const removed = {
     fitProfile: deleteProfile(sessionId) ? 1 : 0,
     cart: store("carts").delete(sessionId) ? 1 : 0,

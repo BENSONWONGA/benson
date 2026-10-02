@@ -13,12 +13,18 @@ import { FX_RATES } from "@/lib/currency";
  * action=place: {email, address, methodId, paymentMethod}        → Order
  */
 
-function cartSubtotal(sessionId) {
-  return getCart(sessionId).items.reduce((s, i) => s + (getProduct(i.productId)?.price || 0) * i.qty, 0);
+async function cartSubtotal(sessionId) {
+  const items = getCart(sessionId).items;
+  let sum = 0;
+  for (const i of items) {
+    const p = await getProduct(i.productId);
+    sum += (p?.price || 0) * i.qty;
+  }
+  return sum;
 }
 
-function quoteFor(sessionId, country) {
-  const subtotal = cartSubtotal(sessionId);
+async function quoteFor(sessionId, country) {
+  const subtotal = await cartSubtotal(sessionId);
   const methods = methodsFor(country, subtotal);
   const defaultMethod = methods.find((m) => m.id.endsWith("express")) || methods[0];
   const tax = quoteTax(country, subtotal, defaultMethod.finalPrice);
@@ -26,7 +32,7 @@ function quoteFor(sessionId, country) {
 }
 
 export async function POST(request) {
-  const sessionId = getSessionId(request.cookies);
+  const sessionId = getSessionId();
   const body = await request.json().catch(() => ({}));
 
   const cart = getCart(sessionId);
@@ -36,27 +42,27 @@ export async function POST(request) {
 
   try {
     if (body.action === "quote") {
-      const q = quoteFor(sessionId, body.address?.country);
+      const q = await quoteFor(sessionId, body.address?.country);
       return NextResponse.json({ code: 0, data: q });
     }
 
     if (body.action === "place") {
       const country = body.address?.country;
       // 以 place 时的方法与税重算（防前端篡改金额）
-      const q = quoteFor(sessionId, country);
+      const q = await quoteFor(sessionId, country);
       const method = body.methodId ? getMethod(body.methodId) : null;
       const finalMethod = method && method.zone === q.method.zone
         ? { ...method, finalPrice: method.price } // 选择的方法保留原价，但免邮规则重算
         : q.method;
       // 免邮规则重算（express + 小计门槛）
-      const subtotal = cartSubtotal(sessionId);
+      const subtotal = await cartSubtotal(sessionId);
       if (finalMethod.id.endsWith("express") && subtotal >= 120) finalMethod.finalPrice = 0;
       else finalMethod.finalPrice = finalMethod.price;
 
       const tax = quoteTax(country, subtotal, finalMethod.finalPrice);
       const currency = FX_RATES[request.cookies.get("solfit_currency")?.value] ? request.cookies.get("solfit_currency").value : "USD";
 
-      const order = createOrder(sessionId, {
+      const order = await createOrder(sessionId, {
         email: body.email,
         address: body.address,
         shippingMethod: finalMethod,

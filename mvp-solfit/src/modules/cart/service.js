@@ -11,8 +11,8 @@ export function getCart(sessionId) {
   return store("carts").get(sessionId) || { items: [] };
 }
 
-export function addToCart(sessionId, { productId, size, width = "Standard", qty = 1 }) {
-  const product = getProduct(productId);
+export async function addToCart(sessionId, { productId, size, width = "Standard", qty = 1 }) {
+  const product = await getProduct(productId);
   if (!product) throw new Error("PRODUCT_NOT_FOUND");
   if (!product.sizes.includes(String(size))) throw new Error("INVALID_SIZE");
   if (product.oos.includes(String(size))) throw new Error("SIZE_OUT_OF_STOCK");
@@ -42,13 +42,14 @@ export function removeItem(sessionId, index) {
 }
 
 /** 含履约费用的合计 —— 跨境 UE 模型的核心计算（免邮门槛/关税钩子） */
-export function cartTotals(sessionId) {
+export async function cartTotals(sessionId) {
   const cart = getCart(sessionId);
   const FREE_SHIPPING = Number(process.env.NEXT_PUBLIC_FREE_SHIPPING_THRESHOLD || 120);
-  const subtotal = cart.items.reduce((sum, i) => {
-    const p = getProduct(i.productId);
+  const subtotal = await cart.items.reduce(async (sumP, i) => {
+    const sum = await sumP;
+    const p = await getProduct(i.productId);
     return sum + (p ? p.price * i.qty : 0);
-  }, 0);
+  }, Promise.resolve(0));
   return {
     subtotal,
     shipping: subtotal === 0 || subtotal >= FREE_SHIPPING ? 0 : 12.9,

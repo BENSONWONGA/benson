@@ -1,7 +1,10 @@
 /**
  * modules/inventory — 库存域（交易域 · 按尺码粒度）
  * 鞋类库存的本质是 productId+size 的矩阵 —— 与楦型强相关，不与商品强相关。
- * TODO(Phase 1 后半): PostgreSQL stock 表 + 行级锁扣减 + 超卖补偿
+ *
+ * 并发安全：
+ *   Phase 1（内存）：用按 key 的互斥锁序列化 check-then-decrement，防超卖。
+ *   Phase 2（PostgreSQL）：withStockLock → SELECT ... FOR UPDATE NOWAIT，签名不变。
  */
 
 import { store } from "@/lib/db";
@@ -18,6 +21,44 @@ function ensureSeed() {
   }
 }
 
+/** 按 key 的互斥锁队列（Phase 2 替换为 PG 行级锁） */
+const _locks = new Map(); // key -> { queue: Array<() => void>, busy: boolean }
+
+function acquire(keys) {
+  // 排序避免死锁（A→B 与 B→A 同时请求）
+  const sorted = [...new Set(keys)].sort();
+  return new Promise((resolve) => {
+    const tryAcquire = () => {
+      // 所有 key 都不忙时获得锁
+      const allFree = sorted.every((k) => !_locks.get(k)?.busy);
+      if (allFree) {
+        for (const k of sorted) {
+          const entry = _locks.get(k) || { queue: [], busy: false };
+          entry.busy = true;
+          _locks.set(k, entry);
+        }
+        resolve(() => {
+          for (const k of sorted) {
+            const entry = _locks.get(k);
+            if (entry) {
+              entry.busy = false;
+              const next = entry.queue.shift();
+              if (next) next();
+              else if (entry.queue.length === 0) _locks.delete(k);
+            }
+          }
+        });
+      } else {
+        // 任一 key 忙，则挂到第一个忙 key 的队列尾部
+        const busyKey = sorted.find((k) => _locks.get(k)?.busy);
+        const entry = _locks.get(busyKey);
+        entry.queue.push(tryAcquire);
+      }
+    };
+    tryAcquire();
+  });
+}
+
 export function getStock(productId, size) {
   ensureSeed();
   return store("inventory").get(`${productId}:${size}`) ?? 0;
@@ -31,25 +72,42 @@ export function checkStock(items) {
     .map((i) => ({ productId: i.productId, size: i.size, available: getStock(i.productId, i.size) }));
 }
 
-/** 扣减（先全量校验，避免部分扣减） */
-export function decrementStock(items) {
-  const shortage = checkStock(items);
-  if (shortage.length) {
-    const err = new Error("OUT_OF_STOCK");
-    err.details = shortage;
-    throw err;
+/**
+ * 扣减库存（原子化）
+ * 加锁 → 校验 → 扣减 → 释放。任一缺货抛 OUT_OF_STOCK，不部分扣减。
+ */
+export async function decrementStock(items) {
+  ensureSeed();
+  const keys = items.map((i) => `${i.productId}:${i.size}`);
+  const release = await acquire(keys);
+  try {
+    const shortage = items
+      .filter((i) => getStock(i.productId, i.size) < i.qty)
+      .map((i) => ({ productId: i.productId, size: i.size, available: getStock(i.productId, i.size) }));
+    if (shortage.length) {
+      const err = new Error("OUT_OF_STOCK");
+      err.details = shortage;
+      throw err;
+    }
+    const m = store("inventory");
+    for (const i of items) {
+      const key = `${i.productId}:${i.size}`;
+      m.set(key, m.get(key) - i.qty);
+    }
+    return true;
+  } finally {
+    release();
   }
-  const m = store("inventory");
-  for (const i of items) {
-    const key = `${i.productId}:${i.size}`;
-    m.set(key, m.get(key) - i.qty);
-  }
-  return true;
 }
 
-/** 换码不增减总量（一对换一对）；退货入库由逆向物流回调触发（TODO Phase 2） */
-export function restock(productId, size, qty = 1) {
+/** 退货入库（也加锁，避免与扣减竞争） */
+export async function restock(productId, size, qty = 1) {
   ensureSeed();
   const key = `${productId}:${size}`;
-  store("inventory").set(key, (store("inventory").get(key) || 0) + qty);
+  const release = await acquire([key]);
+  try {
+    store("inventory").set(key, (store("inventory").get(key) || 0) + qty);
+  } finally {
+    release();
+  }
 }

@@ -4,6 +4,7 @@
  */
 
 import { PRODUCTS } from "@/data/products";
+import { cacheOrSet } from "@/lib/cache";
 
 /** 列表查询（API 形状与原型 api.js stub 一致） */
 export function listProducts({ category, width, heel, sort } = {}) {
@@ -17,9 +18,9 @@ export function listProducts({ category, width, heel, sort } = {}) {
   return list;
 }
 
-/** 详情 */
-export function getProduct(id) {
-  return PRODUCTS.find((p) => p.id === Number(id)) || null;
+/** 详情（带缓存 —— Phase 2 数据迁 PG 后此层自动命中 Redis） */
+export async function getProduct(id) {
+  return cacheOrSet(`product:${id}`, () => PRODUCTS.find((p) => p.id === Number(id)) || null, 300);
 }
 
 /** 结构化检索 —— AI 导购 Function Calling 的数据源（防幻觉的唯一事实来源） */

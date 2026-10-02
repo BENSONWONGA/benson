@@ -29,6 +29,12 @@ export default function CheckoutClient({ currency = "USD" }) {
   // 结算漏斗起点（consent 闸门内）
   useEffect(() => { track("checkout_started", { currency }); }, []);
 
+  // 挂载时即获取默认国家报价（避免用户不切换国家时 step 2 空白）
+  useEffect(() => {
+    updateAddress({ country: address.country });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function updateAddress(patch) {
     const next = { ...address, ...patch };
     setAddress(next);
@@ -59,19 +65,55 @@ export default function CheckoutClient({ currency = "USD" }) {
 
   async function placeOrder() {
     setBusy(true); setError(null);
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "place", email: address.email, address, methodId }),
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (json.code === 0) {
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "place", email: address.email, address, methodId }),
+      });
+      const json = await res.json();
+      if (json.code !== 0) {
+        setError(json.message === "OUT_OF_STOCK" ? "An item just sold out — back to cart to adjust sizes." : json.message);
+        setBusy(false);
+        return;
+      }
+
+      const order = json.data;
+      // Stripe 真实链路：有 clientSecret 时用 Stripe.js 确认支付
+      if (order.payment?.clientSecret) {
+        const stripe = await loadStripe();
+        const { error: confirmErr } = await stripe.confirmCardPayment(order.payment.clientSecret, {
+          payment_method: { card: { number: payment.card, exp_month: payment.exp.split("/")[0], exp_year: "20" + payment.exp.split("/")[1], cvc: payment.cvc } },
+        });
+        if (confirmErr) {
+          setError(confirmErr.message);
+          setBusy(false);
+          return;
+        }
+      }
+      // demo 模式或支付确认成功 → 跳转订单页
       window.dispatchEvent(new Event("solfit:cart"));
-      router.push(`/order/${json.data.id}`);
-    } else {
-      setError(json.message === "OUT_OF_STOCK" ? "An item just sold out — back to cart to adjust sizes." : json.message);
+      router.push(`/order/${order.id}`);
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
     }
+  }
+
+  // 懒加载 Stripe.js（仅真实链路需要）
+  let _stripePromise = null;
+  function loadStripe() {
+    if (!_stripePromise) {
+      _stripePromise = new Promise((resolve, reject) => {
+        if (window.Stripe) return resolve(window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY));
+        const s = document.createElement("script");
+        s.src = "https://js.stripe.com/v3/";
+        s.onload = () => resolve(window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY));
+        s.onerror = reject;
+        document.body.appendChild(s);
+      });
+    }
+    return _stripePromise;
   }
 
   return (

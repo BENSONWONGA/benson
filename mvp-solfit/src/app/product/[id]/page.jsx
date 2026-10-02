@@ -11,8 +11,8 @@ import { getCurrencyFromCookies, formatMoney } from "@/lib/currency";
 import ProductCard from "@/components/ProductCard";
 import ProductClient from "@/components/ProductClient";
 
-export function generateMetadata({ params }) {
-  const product = getProduct(params.id);
+export async function generateMetadata({ params }) {
+  const product = await getProduct(params.id);
   if (!product) return { title: "Not found" };
   return {
     title: product.name,
@@ -41,8 +41,8 @@ function productJsonLd(product) {
   };
 }
 
-export default function ProductPage({ params }) {
-  const product = getProduct(params.id);
+export default async function ProductPage({ params }) {
+  const product = await getProduct(params.id);
   if (!product) notFound();
 
   const currency = getCurrencyFromCookies(cookies());

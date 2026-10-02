@@ -7,7 +7,7 @@ import { getSessionId, store } from "@/lib/db";
  * TODO(Phase 2): 账户体系上线后按 userId 全量导出 + 邮件交付
  */
 export async function GET(request) {
-  const sessionId = getSessionId(request.cookies);
+  const sessionId = getSessionId();
   const orders = [...store("orders").values()].filter((o) => o.sessionId === sessionId)
     .map((o) => ({ ...o, email: mask(o.email) })); // 骨架期脱敏展示
   return NextResponse.json({

@@ -39,7 +39,7 @@ export const STYLIST_TOOLS = [
 ];
 
 /** 工具执行器 —— LLM 的 tool_call 在这里落到结构化数据 */
-export function executeStylistTool(name, args) {
+export async function executeStylistTool(name, args) {
   switch (name) {
     case "search_products": {
       const products = searchProducts({ ...args, max: 4 });
@@ -49,7 +49,7 @@ export function executeStylistTool(name, args) {
       }));
     }
     case "get_product_details": {
-      const p = getProduct(args.id);
+      const p = await getProduct(args.id);
       if (!p) return { error: "not found" };
       const { id, name, price, category, heel, widths, sizes, oos, badge, desc, image, fitStats } = p;
       return { id, name, price, category, heel, widths, sizes, oos, badge, desc, image, fitStats };
@@ -60,7 +60,7 @@ export function executeStylistTool(name, args) {
 }
 
 /** 未配置 LLM 时的关键词兜底（保证骨架开箱可跑） */
-export function keywordFallback(message) {
+export async function keywordFallback(message) {
   const t = String(message).toLowerCase();
   const rules = [
     { k: ["wedding", "bride"], products: [3, 8], reply: "For weddings I recommend keeping the heel under 45mm so you survive the dancing. My picks:" },
@@ -71,8 +71,9 @@ export function keywordFallback(message) {
     { k: ["size", "fit", "recommend"], products: [1, 2], reply: "I can nail your size in under a minute — open the AI Size Finder on any product page:" },
   ];
   const hit = rules.find((r) => r.k.some((k) => t.includes(k)));
-  return {
-    reply: hit ? hit.reply : "I can help with categories (heels, loafers, sneakers, boots…), fit questions, or sizing. What's the occasion?",
-    products: hit ? hit.products.map(getProduct).filter(Boolean) : listProducts().slice(0, 2),
-  };
+  if (hit) {
+    const products = (await Promise.all(hit.products.map(getProduct))).filter(Boolean);
+    return { reply: hit.reply, products };
+  }
+  return { reply: "I can help with categories (heels, loafers, sneakers, boots…), fit questions, or sizing. What's the occasion?", products: listProducts().slice(0, 2) };
 }

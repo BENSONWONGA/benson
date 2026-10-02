@@ -28,7 +28,7 @@ export async function askStylist(message, history = []) {
 
   // 未配置 LLM => 规则兜底（骨架开箱可跑）
   if (!llmEnabled) {
-    const fb = keywordFallback(message);
+    const fb = await keywordFallback(message);
     return { ...fb, source: "rules" };
   }
 
@@ -49,7 +49,7 @@ export async function askStylist(message, history = []) {
       messages.push(msg);
       for (const tc of msg.tool_calls) {
         const args = JSON.parse(tc.function.arguments || "{}");
-        const result = executeStylistTool(tc.function.name, args);
+        const result = await executeStylistTool(tc.function.name, args);
         messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
       }
       // 第二轮：LLM 用工具返回的事实组织语言
@@ -63,7 +63,7 @@ export async function askStylist(message, history = []) {
   } catch (err) {
     // LLM 失败 → 规则降级，绝不向用户暴露错误
     console.error("[stylist] LLM failed, fallback to rules:", err.message);
-    const fb = keywordFallback(message);
+    const fb = await keywordFallback(message);
     return { ...fb, source: "rules-fallback" };
   }
 }

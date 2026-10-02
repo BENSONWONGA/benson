@@ -18,7 +18,7 @@ export async function GET(request) {
 }
 
 export async function PUT(request) {
-  const sessionId = getSessionId(request.cookies);
+  const sessionId = getSessionId();
   const body = await request.json().catch(() => null);
   if (!body?.orderId) return NextResponse.json({ code: 400, message: "orderId is required" }, { status: 400 });
 

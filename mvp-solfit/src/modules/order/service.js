@@ -10,16 +10,16 @@
 import { store, trackEvent } from "@/lib/db";
 import { getCart } from "@/modules/cart/service";
 import { getProduct } from "@/modules/catalog/service";
-import { decrementStock } from "@/modules/inventory/service";
+import { decrementStock, restock } from "@/modules/inventory/service";
 import { issueTrackingNumber, zoneFor } from "@/modules/shipping/service";
-import { chargeDemo } from "@/modules/payment/service";
+import { createPaymentIntent } from "@/modules/payment/service";
 
 /**
  * 下单（由 /api/checkout place 调用，前端不直接传金额）
  * @param {string} sessionId
  * @param {{email, address, shippingMethod, taxQuote, currency, fxRate, paymentMethod}} payload
  */
-export function createOrder(sessionId, payload) {
+export async function createOrder(sessionId, payload) {
   const cart = getCart(sessionId);
   if (!cart.items.length) throw new Error("EMPTY_CART");
 
@@ -28,20 +28,26 @@ export function createOrder(sessionId, payload) {
   if (!address?.name || !address?.street || !address?.city || !address?.zip) throw new Error("MISSING_FIELDS");
 
   // 1) 库存校验+扣减（失败抛 OUT_OF_STOCK，购物车不被动过）
-  decrementStock(cart.items);
+  await decrementStock(cart.items);
 
   try {
     // 2) 金额计算（服务端唯一事实，前端只展示）
-    const items = cart.items.map((i) => {
-      const p = getProduct(i.productId);
+    const items = await Promise.all(cart.items.map(async (i) => {
+      const p = await getProduct(i.productId);
       return { ...i, name: p?.name, unitPrice: p?.price, lineTotal: Math.round((p?.price || 0) * i.qty * 100) / 100 };
-    });
+    }));
     const subtotal = Math.round(items.reduce((s, i) => s + i.lineTotal, 0) * 100) / 100;
     const shipping = Math.round((shippingMethod.finalPrice ?? shippingMethod.price) * 100) / 100;
     const tax = Math.round((taxQuote?.amount || 0) * 100) / 100;
+    const total = Math.round((subtotal + shipping + tax) * 100) / 100;
+
+    const orderId = "SO-" + Date.now().toString(36).toUpperCase();
+
+    // 3) 创建支付意图（Stripe 真实链路 / demo 直扣）
+    const payment = await createPaymentIntent({ orderId, amount: total, currency });
 
     const order = {
-      id: "SO-" + Date.now().toString(36).toUpperCase(),
+      id: orderId,
       sessionId,
       email,
       address,
@@ -51,16 +57,12 @@ export function createOrder(sessionId, payload) {
       fxRate,
       taxRule: { type: taxQuote?.type, label: taxQuote?.label, rate: taxQuote?.rate, provider: taxQuote?.provider },
       items,
-      totals: {
-        subtotal,
-        shipping,
-        tax,
-        total: Math.round((subtotal + shipping + tax) * 100) / 100,
-      },
+      totals: { subtotal, shipping, tax, total },
       shippingMethod: { id: shippingMethod.id, name: shippingMethod.name, zone: shippingMethod.zone },
       tracking: issueTrackingNumber(),
-      payment: chargeDemo({ totals: { total: subtotal + shipping + tax }, currency }),
-      status: "paid", // 演示桩直接置 paid；真实链路由 Stripe webhook 驱动（见 modules/payment）
+      payment,
+      // demo 模式直接 paid；Stripe 模式 pending_payment，等 webhook 确认
+      status: payment.status === "succeeded" ? "paid" : "pending_payment",
       createdAt: new Date().toISOString(),
     };
     store("orders").set(order.id, order);
@@ -69,19 +71,42 @@ export function createOrder(sessionId, payload) {
       orderId: order.id, sessionId, region: order.region,
       total: order.totals.total, currency,
       itemCount: items.length, taxType: order.taxRule.type,
+      provider: payment.provider,
     });
     return order;
   } catch (err) {
-    // 计算失败回滚库存
-    for (const i of cart.items) {
-      store("inventory").set(`${i.productId}:${i.size}`, (store("inventory").get(`${i.productId}:${i.size}`) || 0) + i.qty);
-    }
+    // 计算/支付失败回滚库存
+    for (const i of cart.items) await restock(i.productId, i.size, i.qty);
     throw err;
   }
 }
 
 export function getOrder(orderId) {
   return store("orders").get(orderId) || null;
+}
+
+/**
+ * 由支付 webhook 调用 —— 唯一可信的支付状态写入入口（不信任前端）
+ * paid → 订单可发货；failed → 释放库存、标记失败，用户可重试支付
+ */
+export async function updateOrderPaymentStatus(orderId, { status, paymentRef }) {
+  const order = getOrder(orderId);
+  if (!order) throw new Error("ORDER_NOT_FOUND");
+  if (order.status === status) return order; // 幂等
+
+  if (status === "paid") {
+    order.status = "paid";
+    order.payment = { ...order.payment, status: "succeeded", reference: paymentRef, paidAt: new Date().toISOString() };
+    trackEvent("order_paid", { orderId, total: order.totals.total, currency: order.currency, provider: order.payment.provider });
+  } else if (status === "failed") {
+    order.status = "payment_failed";
+    order.payment = { ...order.payment, status: "failed", reference: paymentRef, failedAt: new Date().toISOString() };
+    // 释放库存，避免超卖锁定
+    await Promise.all(order.items.map((i) => restock(i.productId, i.size, i.qty)));
+    trackEvent("order_payment_failed", { orderId, provider: order.payment.provider });
+  }
+  store("orders").set(orderId, order);
+  return order;
 }
 
 /**

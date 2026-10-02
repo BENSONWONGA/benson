@@ -24,7 +24,7 @@ const ALLOWED = new Set([
 ]);
 
 export async function POST(request) {
-  const sessionId = getSessionId(request.cookies);
+  const sessionId = getSessionId();
   const body = await request.json().catch(() => null);
   const events = Array.isArray(body?.events) ? body.events : [];
 

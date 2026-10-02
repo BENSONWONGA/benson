@@ -10,6 +10,8 @@
  * 跨境注意：GDPR 分区要求欧盟用户数据落欧盟区 —— 预留 region 字段。
  */
 
+import { cookies } from "next/headers";
+
 // 进程内存储（dev / 骨架演示用；多实例部署时必须替换）
 const _stores = {
   carts: new Map(),        // sessionId -> { items: [{productId, size, width, qty}] }
@@ -34,12 +36,16 @@ export function trackEvent(type, payload) {
   if (_stores.events.length > 1000) _stores.events.shift(); // 骨架期防溢出
 }
 
-/** 会话 ID 中间件辅助：从 cookie 取或生成（无则新建） */
-export function getSessionId(reqCookies, res) {
-  let sid = reqCookies?.get("solfit_sid")?.value;
+/**
+ * 会话 ID：从 cookie 取或生成并回写（httpOnly · lax · 30天）
+ * 使用 Next.js cookies() API，在 route handler 内可读可写，无需传 response。
+ */
+export function getSessionId() {
+  const cookieStore = cookies();
+  let sid = cookieStore.get("solfit_sid")?.value;
   if (!sid) {
     sid = "s_" + Math.random().toString(36).slice(2, 12);
-    if (res) res.cookies.set("solfit_sid", sid, { httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 * 30 });
+    cookieStore.set("solfit_sid", sid, { httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 * 30 });
   }
   return sid;
 }
