@@ -5,6 +5,7 @@ import { evaluateAlerts, alertsState } from "@/lib/alerts";
 import { baselineSnapshot } from "@/lib/analytics";
 import { recStats } from "@/ai/recommender";
 import { retentionStats } from "@/ai/retention";
+import { audienceStats } from "@/ai/audiences";
 import { notificationStats } from "@/modules/notification/service";
 import { store } from "@/lib/db";
 
@@ -93,6 +94,7 @@ export async function GET(request) {
       rec: recStats(), // Phase 5：A/B 分流 + 质量门；Phase 6：实验 lift 回流
       marketing: { ...notificationStats(), emails: marketingEmails }, // Phase 6
       retention: retentionStats(), // Phase 7：RFM 分层 + 场景命中 + 调度器
+      audiences: audienceStats(), // Phase 8：人群规模 + 导出审计
       generatedAt: new Date().toISOString(),
     },
   });

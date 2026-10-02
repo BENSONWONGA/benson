@@ -41,6 +41,9 @@ export const EVENT_SCHEMA = {
   // ===== 营销回流（Phase 6）=====
   // 只审计发送结果，收件人地址不落事件（PII —— 存于频控账本，GDPR erase 清除）
   marketing_email_sent: { sessionId: "string", campaign: "string", result: "string", provider: "string", source: "string" },
+  // ===== 广告人群（Phase 8）=====
+  // 导出审计：只存平台/人群/规模（邮箱哈希不出域，计数非 PII）
+  audience_exported: { platform: "string", segmentId: "string", size: "number" },
   // ===== 目录与 RUM（Core Web Vitals，客户端 useReportWebVitals）=====
   catalog_list_viewed: { query: "object" },
   product_api_fetched: { productId: "number" },
