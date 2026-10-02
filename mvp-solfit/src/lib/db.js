@@ -19,6 +19,7 @@ const _stores = {
   orders: new Map(),       // orderId -> Order
   inventory: new Map(),    // "productId:size" -> qty（modules/inventory 管理）
   events: [],              // 埋点事件缓冲（TODO: 换 Kafka producer）
+  fitTrainingSet: [],       // 换货/退货训练样本（PG: fit_training_set 表，Phase 2 迁移已建）
 };
 
 export function store(name) {
@@ -48,4 +49,9 @@ export function getSessionId() {
     cookieStore.set("solfit_sid", sid, { httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 * 30 });
   }
   return sid;
+}
+
+/** 只读会话 ID —— SSR 服务器组件安全用（不写 cookie；无会话返回 null，调用方降级冷启动） */
+export function peekSessionId() {
+  return cookies().get("solfit_sid")?.value || null;
 }

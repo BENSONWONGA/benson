@@ -63,6 +63,26 @@ export async function cacheDel(key) {
 }
 
 /**
+ * 按前缀批量失效 —— GDPR erase 场景：该会话的个性化推荐缓存（rec:{sid}:*）
+ * 必须立刻失效，否则被遗忘权执行后 60s 内仍会返回基于已删数据的推荐。
+ */
+export async function cacheDelByPrefix(prefix) {
+  const r = getRedis();
+  if (r) {
+    let cursor = "0";
+    do {
+      const [next, keys] = await r.scan(cursor, "MATCH", prefix + "*", "COUNT", 100);
+      cursor = next;
+      if (keys.length) await r.del(...keys);
+    } while (cursor !== "0");
+    return;
+  }
+  for (const key of [..._store.keys()]) {
+    if (key.startsWith(prefix)) _store.delete(key);
+  }
+}
+
+/**
  * 缓存穿透保护：get → miss 则执行 fn 并回写
  * @param {string} key
  * @param {() => Promise<any>} fn

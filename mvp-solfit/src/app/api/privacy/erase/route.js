@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionId, store, trackEvent } from "@/lib/db";
 import { deleteProfile } from "@/modules/customer/service";
+import { cacheDelByPrefix } from "@/lib/cache";
 
 /**
  * GDPR 被遗忘权 — POST /api/privacy/erase
@@ -14,6 +15,7 @@ export async function POST(request) {
     fitProfile: deleteProfile(sessionId) ? 1 : 0,
     cart: store("carts").delete(sessionId) ? 1 : 0,
     events: 0,
+    trainingSamples: 0,
   };
 
   // 抹除事件流中该会话的个人关联事件（骨架内存版；Phase 2 由数仓按 session 幂等删除）
@@ -23,10 +25,18 @@ export async function POST(request) {
     if (events[i].payload?.sessionId === sessionId) { events.splice(i, 1); removed.events++; }
   }
 
+  // 训练样本脱关联（特征保留、标识抹除 —— 与 PG fit_training_set 表设计一致）
+  for (const s of store("fitTrainingSet")) {
+    if (s.sessionId === sessionId) { s.sessionId = null; removed.trainingSamples++; }
+  }
+
   // 订单脱关联（保留财务记录）
   for (const o of store("orders").values()) {
     if (o.sessionId === sessionId) { o.sessionId = null; o.email = null; store("orders").set(o.id, o); }
   }
+
+  // 本会话个性化推荐缓存立刻失效（否则 60s 内仍返回基于已删数据的推荐）
+  await cacheDelByPrefix(`rec:${sessionId}:`);
 
   trackEvent("profile_erased", { sessionId: null, scope: "erased" }); // 匿名计数
   return NextResponse.json({ code: 0, data: removed });

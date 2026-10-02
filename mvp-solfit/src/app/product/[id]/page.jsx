@@ -6,7 +6,8 @@
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { getProduct, LAST_LIBRARY } from "@/modules/catalog/service";
-import { coldStartRecommend } from "@/ai/recommender";
+import { recommend } from "@/ai/recommender";
+import { peekSessionId } from "@/lib/db";
 import { getCurrencyFromCookies, formatMoney } from "@/lib/currency";
 import ProductCard from "@/components/ProductCard";
 import ProductClient from "@/components/ProductClient";
@@ -47,7 +48,13 @@ export default async function ProductPage({ params }) {
 
   const currency = getCurrencyFromCookies(cookies());
   const last = LAST_LIBRARY[product.lastCode];
-  const related = coldStartRecommend({ excludeId: product.id, max: 4 });
+  // Phase 3 个性化：种子商品相关推荐（CF + 结构相似；无会话行为自动降级）
+  const related = await recommend({
+    sessionId: peekSessionId(),
+    seedProductId: product.id,
+    excludeId: product.id,
+    max: 4,
+  });
 
   return (
     <>

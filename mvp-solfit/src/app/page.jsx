@@ -1,21 +1,23 @@
 /**
  * app/page.jsx — 首页（SSR：SEO 是独立站命脉，见方案文档 §6.2）
- * 商品数据服务端直出，AI 推荐走 /api/ai/recommendations（冷启动规则）
+ * 商品数据服务端直出；AI 推荐 Phase 3 起按会话行为个性化（ai/recommender）
  */
 
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { listProducts } from "@/modules/catalog/service";
-import { coldStartRecommend } from "@/ai/recommender";
+import { recommend } from "@/ai/recommender";
+import { peekSessionId } from "@/lib/db";
 import { getCurrencyFromCookies } from "@/lib/currency";
 import ProductCard from "@/components/ProductCard";
 
 export const dynamic = "force-dynamic"; // 货币偏好按会话渲染（SEO 策略见方案 §6.2：ISR + 边缘个性化）
 
-export default function HomePage() {
+export default async function HomePage() {
   const currency = getCurrencyFromCookies(cookies());
   const featured = listProducts({ sort: "rating" }).slice(0, 4);
-  const recommended = coldStartRecommend({ max: 4 }); // Phase 2 换召回+排序
+  // Phase 3 个性化：有会话行为走 CF+特征排序，否则冷启动（SSR 只读 cookie，不新建会话）
+  const recommended = await recommend({ sessionId: peekSessionId(), max: 4 });
 
   return (
     <>

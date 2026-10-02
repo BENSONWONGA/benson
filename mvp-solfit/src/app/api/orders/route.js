@@ -27,7 +27,7 @@ export async function PUT(request) {
   if (order.sessionId !== sessionId) return NextResponse.json({ code: 403, message: "not your order" }, { status: 403 });
 
   try {
-    const updated = applyExchange(body.orderId, body);
+    const updated = await applyExchange(body.orderId, body);
     return NextResponse.json({ code: 0, data: updated });
   } catch (err) {
     return NextResponse.json({ code: 400, message: err.message }, { status: 400 });

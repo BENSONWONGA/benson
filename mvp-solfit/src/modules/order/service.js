@@ -9,6 +9,7 @@
 
 import { store, trackEvent } from "@/lib/db";
 import { getCart } from "@/modules/cart/service";
+import { getFitProfile } from "@/modules/customer/service";
 import { getProduct } from "@/modules/catalog/service";
 import { decrementStock, restock } from "@/modules/inventory/service";
 import { issueTrackingNumber, zoneFor } from "@/modules/shipping/service";
@@ -114,7 +115,7 @@ export async function updateOrderPaymentStatus(orderId, { status, paymentRef }) 
  * 每次换码必须带 reason（too_small / too_large / quality / not_as_described），
  * 这条数据流将回流到 fit_training_set 训练个性化尺码模型。
  */
-export function applyExchange(orderId, { productId, fromSize, toSize = null, reason }) {
+export async function applyExchange(orderId, { productId, fromSize, toSize = null, reason }) {
   const VALID_REASONS = ["too_small", "too_large", "quality", "not_as_described", "changed_mind"];
   const order = getOrder(orderId);
   if (!order) throw new Error("ORDER_NOT_FOUND");
@@ -124,9 +125,27 @@ export function applyExchange(orderId, { productId, fromSize, toSize = null, rea
   order.status = toSize ? "exchanged" : "returned"; // toSize=null 视为退货
   store("orders").set(orderId, order);
 
-  trackEvent("order_exchanged", {
-    orderId, productId, fromSize, toSize, reason,
-    // TODO(Phase 2): 写入 fit_training_set 表 —— 与脚型档案关联形成训练样本
+  // ===== 退货/换码数据回流（AI 闭环燃料 · PG: fit_training_set）=====
+  // 写入时冗余训练特征（楦型/习惯尺码/宽窄/区域）—— 档案被 GDPR 删除后
+  // 样本仍可训练（特征非识别性），sessionId 供推荐层做"已退换排除"。
+  const product = await getProduct(productId);
+  const profile = order.sessionId ? getFitProfile(order.sessionId) : null;
+  const samples = store("fitTrainingSet");
+  samples.push({
+    orderId,
+    sessionId: order.sessionId,
+    productId,
+    lastCode: product?.lastCode ?? null,
+    fromSize,
+    toSize, // null = 纯退货
+    reason,
+    usualSize: profile?.usualSize ?? null,
+    widthFeel: profile?.widthFeel ?? null,
+    region: order.region ?? null,
+    createdAt: new Date().toISOString(),
   });
+  if (samples.length > 1000) samples.shift(); // 骨架期防溢出（Phase 4 落数仓）
+
+  trackEvent("order_exchanged", { orderId, sessionId: order.sessionId, productId, fromSize, toSize, reason });
   return order;
 }
