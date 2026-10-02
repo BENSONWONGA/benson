@@ -31,6 +31,9 @@ export const EVENT_SCHEMA = {
   order_paid: { orderId: "string", total: "number", currency: "string", provider: "string" },
   order_payment_failed: { orderId: "string", provider: "string" },
   order_exchanged: { orderId: "string", sessionId: "string", productId: "number", fromSize: "string", toSize: "string", reason: "string" },
+  // ===== 商家操作（merchant 域）=====
+  order_shipped: { orderId: "string", region: "string" },
+  inventory_restocked: { lines: "number", qty: "number" },
   // ===== AI 服务 =====
   ai_size_recommended: { profile: "object", size: "string", width: "string", confidence: "number" },
   ai_stylist_message: {}, // 用户消息原文是 PII —— 只计数，字段不落管道

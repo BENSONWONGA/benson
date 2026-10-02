@@ -16,7 +16,14 @@ export default function OrderPage({ params }) {
   if (!order) notFound();
 
   const fmt = (usd) => formatMoneyFromRate(usd, order.currency, order.fxRate);
-  const statusLabel = { paid: "Paid", exchanged: "Exchange in progress", returned: "Return processing" }[order.status] || order.status;
+  const statusLabel = {
+    paid: "Paid",
+    shipped: "Shipped", // 商家后台发货后的状态（merchant 域）
+    exchanged: "Exchange in progress",
+    returned: "Return processing",
+    pending_payment: "Awaiting payment",
+    payment_failed: "Payment failed",
+  }[order.status] || order.status;
 
   return (
     <div className="container" style={{ padding: "40px 24px 80px", maxWidth: 900 }}>
