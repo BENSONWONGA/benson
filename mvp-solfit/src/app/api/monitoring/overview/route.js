@@ -4,6 +4,7 @@ import { pipelineStats } from "@/lib/pipeline";
 import { evaluateAlerts, alertsState } from "@/lib/alerts";
 import { baselineSnapshot } from "@/lib/analytics";
 import { recStats } from "@/ai/recommender";
+import { retentionStats } from "@/ai/retention";
 import { notificationStats } from "@/modules/notification/service";
 import { store } from "@/lib/db";
 
@@ -91,6 +92,7 @@ export async function GET(request) {
       alerts: alertsState(),
       rec: recStats(), // Phase 5：A/B 分流 + 质量门；Phase 6：实验 lift 回流
       marketing: { ...notificationStats(), emails: marketingEmails }, // Phase 6
+      retention: retentionStats(), // Phase 7：RFM 分层 + 场景命中 + 调度器
       generatedAt: new Date().toISOString(),
     },
   });

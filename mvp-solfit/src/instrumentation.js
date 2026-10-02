@@ -17,6 +17,9 @@ export async function register() {
     // 保证 instrumentation 的 Edge 编译入口依赖图干净。
     const { startRecoveryDispatcher } = await import("@/ai/recovery");
     startRecoveryDispatcher();
+    // 留存摘要投递器（Phase 7：默认 7 天周期；与 recovery 共享单客频控账本）
+    const { startRetentionDispatcher } = await import("@/ai/retention");
+    startRetentionDispatcher();
   } catch (err) {
     console.error("[instrumentation] monitor bootstrap failed:", err.message);
   }
