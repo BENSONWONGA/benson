@@ -10,7 +10,8 @@ export function baselineSnapshot() {
   const events = store("events");
   const orders = store("orders");
 
-  const count = (name) => events.filter((e) => e.name === name).length;
+  // 事件名在 lib/db.trackEvent 中以 type 字段写入（与 events 表 type 列一致）
+  const count = (name) => events.filter((e) => e.type === name).length;
   const views = count("product_viewed");
   const cartAdds = count("cart_added");
   const checkouts = count("checkout_started");
