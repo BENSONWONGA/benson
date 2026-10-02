@@ -3,6 +3,7 @@ import { metricsSnapshot } from "@/lib/metrics";
 import { pipelineStats } from "@/lib/pipeline";
 import { evaluateAlerts, alertsState } from "@/lib/alerts";
 import { baselineSnapshot } from "@/lib/analytics";
+import { recStats } from "@/ai/recommender";
 import { store } from "@/lib/db";
 
 /**
@@ -82,6 +83,7 @@ export async function GET(request) {
       kpis: baselineSnapshot(),
       vitals: rumVitals(),
       alerts: alertsState(),
+      rec: recStats(), // Phase 5：A/B 分流计数 + 学习排序质量门状态
       generatedAt: new Date().toISOString(),
     },
   });

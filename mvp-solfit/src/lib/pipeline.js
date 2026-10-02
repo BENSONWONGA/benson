@@ -34,7 +34,7 @@ export const EVENT_SCHEMA = {
   // ===== AI 服务 =====
   ai_size_recommended: { profile: "object", size: "string", width: "string", confidence: "number" },
   ai_stylist_message: {}, // 用户消息原文是 PII —— 只计数，字段不落管道
-  recommend_served: { type: "string", sessionId: "string", seedId: "number" },
+  recommend_served: { type: "string", sessionId: "string", seedId: "number", variant: "string" },
   // ===== 档案与合规 =====
   fit_profile_saved: { sessionId: "string", recommended: "string" },
   profile_erased: { sessionId: "string", scope: "string" },

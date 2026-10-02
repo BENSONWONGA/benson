@@ -21,6 +21,7 @@ const _stores = {
   inventory: new Map(),     // "productId:size" -> qty（modules/inventory 管理）
   events: [],              // 埋点事件缓冲（Phase 4 起由 pipeline 管理，见 registerSink）
   fitTrainingSet: [],       // 换货/退货训练样本（PG: fit_training_set 表，Phase 2 迁移已建）
+  recTrainingSet: [],       // 推荐印象样本（Phase 5：印象特征快照 → 回流标注 → 学习排序）
 };
 
 export function store(name) {

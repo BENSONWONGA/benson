@@ -18,6 +18,8 @@ export async function GET(request) {
       fitProfile: store("fitProfiles").get(sessionId) || null,
       // 换货/退货训练样本（含冗余档案特征）—— 数据可携带权要求一并导出
       trainingSamples: store("fitTrainingSet").filter((s) => s.sessionId === sessionId),
+      // 推荐印象样本（Phase 5 学习排序特征快照）—— 同属个人衍生数据，一并导出
+      recImpressions: store("recTrainingSet").filter((s) => s.sessionId === sessionId),
       orders,
       generatedAt: new Date().toISOString(),
     },

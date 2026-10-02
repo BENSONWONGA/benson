@@ -54,7 +54,7 @@ export default function MonitoringDashboard() {
   if (error) return <p className="muted">监控数据加载失败：{error}（重试中…）</p>;
   if (!data) return <p className="muted">加载中…</p>;
 
-  const { pipeline, eventsByType, http, kpis, vitals, alerts } = data;
+  const { pipeline, eventsByType, http, kpis, vitals, alerts, rec } = data;
   const maxEvent = Math.max(1, ...eventsByType.map((e) => e.count));
 
   return (
@@ -115,6 +115,26 @@ export default function MonitoringDashboard() {
         <div className="stat-box">
           <div className="num" style={{ color: kpis.kpis.returnRate > 12 ? LEVEL_COLOR.warn : undefined }}>{kpis.kpis.returnRate}%</div>
           <div className="lbl">Return rate (target &lt;12%)</div>
+        </div>
+      </div>
+
+      {/* ===== 推荐模型（Phase 5）===== */}
+      <h3 style={{ margin: "36px 0 16px" }}>Recommendation model — A/B &amp; learned ranking</h3>
+      <div className="baseline-kpis" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+        {(rec?.experiment?.variants ?? []).map((v) => (
+          <div className="stat-box" key={v}>
+            <div className="num">{fmt(rec?.model?.variantCounts?.[v])}</div>
+            <div className="lbl">Variant “{v}” served</div>
+          </div>
+        ))}
+        <div className="stat-box">
+          <div className="num" style={{ color: rec?.model?.warm ? "var(--fit)" : LEVEL_COLOR.warn }}>
+            {rec?.model?.warm ? "warm" : "cold"}
+          </div>
+          <div className="lbl">
+            LR ranker — {fmt(rec?.model?.samples)} labeled / {fmt(rec?.model?.impressions)} impressions
+            {rec?.model?.auc !== null && rec?.model?.auc !== undefined ? ` · AUC ${rec.model.auc}` : ""} · {rec?.model?.note}
+          </div>
         </div>
       </div>
 

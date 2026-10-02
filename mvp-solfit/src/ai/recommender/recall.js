@@ -1,13 +1,33 @@
 /**
  * ai/recommender/recall.js — 多路召回
  *   CF     : 与本会话商品在其他会话中共现过的商品（行为相似人群信号）
- *   Content: 与种子商品的结构相似（类目/跟高/楦型家族/宽窄/价位带）
+ *   Content: 与种子商品的结构相似（类目/跟高/楦型家族/宽窄/价位带）—— baseline 变体
+ *   Vector : 结构相似的路向量版（embeddings.js 余弦相似）—— vector_lr 变体（Phase 5）
  *   Popular: 全站热度兜底
- * 目录小（10 SKU）时对全量打分；目录变大后此层原位换 ES 向量召回，函数签名不变。
+ * 目录小（10 SKU）时对全量打分；目录变大后向量路原位换 ES/pgvector ANN，签名不变。
  */
+
+import { productVector, queryVector, cosine } from "./embeddings";
 
 function topN(scores, limit) {
   return new Map([...scores.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit));
+}
+
+const VECTOR_SCALE = 3; // 余弦 [-1,1] → 与规则内容分同量纲（阈值 1.5 ⇒ 相似度 0.5+）
+
+/**
+ * 向量召回（Phase 5）—— 种子向量（PDP 相关）或档案向量（历史加权，个性化内容路）
+ * @param {Map} productsById id → product 惰性取数器（编排层传入，避免重复 listProducts）
+ */
+export function recallVector({ seed, userFeat, candidates, productsById }) {
+  const q = queryVector({ seed, userFeat, productsById });
+  if (!q) return new Map();
+  const scores = new Map();
+  for (const p of candidates) {
+    const s = cosine(q, productVector(p)) * VECTOR_SCALE;
+    if (s > 0) scores.set(p.id, s);
+  }
+  return scores;
 }
 
 /**
