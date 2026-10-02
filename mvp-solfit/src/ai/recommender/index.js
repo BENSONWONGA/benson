@@ -8,6 +8,9 @@
  *              ├─ baseline  : Phase 3 规则路径（对照组）
  *              └─ vector_lr : 向量内容召回（embeddings.js）+ 在线学习排序（model.js）
  *            模型质量门不过 → 静默降级规则权重（§10："AI 不达标时静默降级"）
+ *   Phase 9  实验自治理：bandit.js 按效果回流自动分配变体流量（champion 吃 1-ε）
+ *   Phase 10 业务重排：rerank.js 在排序后落最后一道闸 —— 尺码可得性/类目
+ *            多样性/库存深度/探索槽位（工业流水线的 召回→排序→重排 完整形态）
  *   Next     召回层原位换 ES/pgvector ANN，排序层原位换 GBDT/DNN —— 签名均不变
  *
  * 推荐闭环（退货数据回流的价值兑现）：
@@ -27,6 +30,7 @@ import { cacheOrSet } from "@/lib/cache";
 import { userFeatures, productSignals, sessionInteractions } from "./features";
 import { recallCollaborative, recallContent, recallVector, recallPopular } from "./recall";
 import { rankCandidates } from "./rank";
+import { rerankCandidates, rerankStats } from "./rerank";
 import { assignVariant, experimentMeta } from "./experiments";
 import { maybeTrain, logImpression, noteVariant, modelState, variantLift } from "./model";
 
@@ -88,15 +92,19 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4 }
       const popular = recallPopular(signals, candidates);
 
       const ranked = rankCandidates(candidates, { cf, content, popular, signals, userFeat });
+      // Phase 10 业务重排：尺码可得性闸 + 类目多样性 + 库存深度 + 探索槽位 ——
+      // 印象落库与返回商品都用重排后的"真实服务序"（学过的必须是播过的）
+      const { items: served, stats: rerank } = rerankCandidates(ranked, { max, userFeat, signals });
       return {
-        products: ranked.slice(0, max).map((r) => ({
+        products: served.map((r) => ({
           ...r.product,
           recScore: Math.round(r.score * 100) / 100, // 调试可见（真实分数量级无业务含义）
           recReasons: r.reasons, // 可解释性：每个推荐位都能回答"为什么推它"
         })),
         source: hasHistory ? "personalized" : "seed_content",
         variant,
-        ranked, // 印象落库用（含特征快照）
+        ranked: served, // ≤max 的最终服务序（logImpression 直接用）
+        rerank,
       };
     },
     60 // 60s：埋点高频变化，长缓存会放大学过拟合
@@ -111,7 +119,7 @@ export async function recommend({ sessionId, seedProductId, excludeId, max = 4 }
   return result.products;
 }
 
-/** 推荐服务健康快照 —— 监控看板 / overview API（A/B 分流 + 模型质量门 + 实验效果回流） */
+/** 推荐服务健康快照 —— 监控看板 / overview API（A/B 分流 + 模型质量门 + 实验效果回流 + 重排观测） */
 export function recStats() {
-  return { experiment: experimentMeta(), model: modelState(), lift: variantLift() };
+  return { experiment: experimentMeta(), model: modelState(), lift: variantLift(), rerank: rerankStats() };
 }
