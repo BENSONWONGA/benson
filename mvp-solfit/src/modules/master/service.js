@@ -151,7 +151,7 @@ export function audit(actor, action, detail = null) {
   if (logs.length > AUDIT_CAP) logs.shift();
 }
 
-/** 请求 → 操作者（超管令牌 / 员工令牌 → 名字；都不匹配则"未知"） */
+/** 请求 → 操作者（超管令牌 / 员工令牌 / 商家种子令牌 → 名字；都不匹配则"未知"） */
 export function resolveActor(request) {
   const url = new URL(request.url);
   const candidates = [
@@ -163,6 +163,7 @@ export function resolveActor(request) {
     if (tokensMatch(token, masterToken())) return "初始超管";
     const st = findActiveStaffByToken(token);
     if (st) return st.name;
+    if (tokensMatch(token, process.env.ADMIN_TOKEN || "dev-admin-token")) return "初始管理员（种子令牌）";
   }
   return "未知";
 }

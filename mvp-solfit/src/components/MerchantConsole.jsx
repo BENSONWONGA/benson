@@ -8,6 +8,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { THEMES } from "@/lib/themes";
+import { HOME_TEXT } from "@/lib/i18n";
 
 const TOKEN_KEY = "solfit_admin_token";
 const POLL_MS = 10000;
@@ -46,6 +48,10 @@ export default function MerchantConsole() {
   const postFormRef = useRef(null);                // Content：发布表单（AI 草稿回填目标）
   const [genBusy, setGenBusy] = useState(false);   // Content：AI 生成中
   const [genSource, setGenSource] = useState(null); // Content：草稿来源徽标（llm/template）
+  // Phase 23 品牌三件套：主题 / 首页装修 / SEO（表单态 —— settings 首次到达播种）
+  const [themeSel, setThemeSel] = useState(null);
+  const [hpForm, setHpForm] = useState(null);
+  const [seoForm, setSeoForm] = useState(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(TOKEN_KEY);
@@ -72,6 +78,32 @@ export default function MerchantConsole() {
     const t = setInterval(() => load(token), POLL_MS);
     return () => clearInterval(t);
   }, [token, load]);
+
+  // settings 首次到达播种三个品牌表单（轮询不覆盖用户未保存的编辑）
+  useEffect(() => {
+    const s = data?.settings;
+    if (!s) return;
+    if (!themeSel) setThemeSel({ theme: s.theme, themeLocked: s.themeLocked });
+    if (!hpForm) {
+      const pick = (lang) => ({
+        heroEyebrow: s.homeContent?.[lang]?.heroEyebrow || "",
+        heroH1: s.homeContent?.[lang]?.heroH1 || "",
+        heroLede: s.homeContent?.[lang]?.heroLede || "",
+        ctaFind: s.homeContent?.[lang]?.ctaFind || "",
+        ctaShop: s.homeContent?.[lang]?.ctaShop || "",
+        recH2: s.homeContent?.[lang]?.recH2 || "",
+        topH2: s.homeContent?.[lang]?.topH2 || "",
+      });
+      setHpForm({ zh: pick("zh"), en: pick("en"), heroImage: s.homeHeroImage || "" });
+    }
+    if (!seoForm) {
+      setSeoForm({
+        title: s.seo?.title || "",
+        description: s.seo?.description || "",
+        keywords: s.seo?.keywords || "",
+      });
+    }
+  }, [data, themeSel, hpForm, seoForm]);
 
   async function unlock(e) {
     e.preventDefault();
@@ -129,7 +161,7 @@ export default function MerchantConsole() {
   }
 
   if (!data) return <p className="muted">加载中…</p>;
-  const { stats, orders, inventory, products, promos, posts, reviews, customers } = data;
+  const { stats, orders, inventory, products, promos, posts, reviews, customers, settings } = data;
   const toShip = orders.filter((o) => o.status === "paid");
 
   return (
@@ -138,11 +170,14 @@ export default function MerchantConsole() {
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", margin: "28px 0 4px" }}>
         {[
           ["overview", `经营速览`],
+          ["theme", `主题模板`],
+          ["homepage", `首页装修`],
+          ["catalog", `商品上架 (${(products || []).length})`],
           ["orders", `订单 (${toShip.length} 待发货)`],
           ["inventory", `库存 (${stats.oosSizes} 缺码)`],
-          ["catalog", `商品 (${(products || []).length})`],
           ["promos", `优惠码 (${(promos || []).length})`],
           ["content", `内容 (${(posts || []).length})`],
+          ["seo", `SEO 设置`],
           ["reviews", `评价 (${(reviews || []).length})`],
           ["customers", `会员 (${(customers || []).length})`],
         ].map(([id, label]) => (
@@ -157,7 +192,11 @@ export default function MerchantConsole() {
         <button
           className="btn btn-sm btn-outline"
           style={{ marginLeft: "auto" }}
-          onClick={() => { sessionStorage.removeItem(TOKEN_KEY); setToken(null); setData(null); }}
+          onClick={() => {
+            sessionStorage.removeItem(TOKEN_KEY);
+            setToken(null); setData(null);
+            setThemeSel(null); setHpForm(null); setSeoForm(null);
+          }}
         >
           锁定
         </button>
@@ -186,6 +225,136 @@ export default function MerchantConsole() {
 
           <h3 style={{ margin: "32px 0 12px" }}>近期订单</h3>
           <OrderTable orders={orders.slice(0, 8)} busy={busy} onShip={(id) => shipOrder(id)} />
+        </>
+      )}
+
+      {/* ===== Theme（Phase 23：站点主题 / 10 套 UI 模板）===== */}
+      {tab === "theme" && themeSel && (
+        <>
+          <h3 style={{ margin: "28px 0 4px" }}>主题模板 — 站点门面（10 套 UI 模板）</h3>
+          <p className="muted" style={{ fontSize: 12, margin: "0 0 16px" }}>
+            点选卡片设为<b>站点默认主题</b>（访客未自选时的门面）；勾选"锁定"后全站强制使用该主题，前台自选器隐藏。
+            不锁定时：访客自选 cookie 优先 &gt; 站点默认。
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "0 0 18px" }}>
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setThemeSel({ ...themeSel, theme: t.id })}
+                className={"chip" + (themeSel.theme === t.id ? " active" : "")}
+                style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, padding: "8px 14px" }}
+                title={t.label}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    width: 15, height: 15, borderRadius: 999, display: "inline-block",
+                    background: t.swatch,
+                    boxShadow: t.dark ? "inset 0 0 0 2px rgba(255,255,255,0.35)" : "inset 0 0 0 1px rgba(0,0,0,0.15)",
+                  }}
+                />
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer", marginBottom: 14 }}>
+            <input
+              type="checkbox"
+              checked={themeSel.themeLocked}
+              onChange={(e) => setThemeSel({ ...themeSel, themeLocked: e.target.checked })}
+              style={{ width: 16, height: 16 }}
+            />
+            锁定全站主题（访客自选失效，前台选择器隐藏 —— 品牌统一门面）
+          </label>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button
+              className="btn btn-primary"
+              disabled={busy === "theme-save"}
+              onClick={() =>
+                act("/api/admin/settings",
+                  { action: "theme", theme: themeSel.theme, themeLocked: themeSel.themeLocked },
+                  "theme-save",
+                  `站点主题已设为「${THEMES.find((x) => x.id === themeSel.theme)?.label}」${themeSel.themeLocked ? "（已锁定全站）" : ""}`)
+              }
+            >
+              {busy === "theme-save" ? "保存中…" : "保存主题"}
+            </button>
+            <a className="btn btn-outline" href="/" target="_blank">查看首页效果</a>
+          </div>
+        </>
+      )}
+
+      {/* ===== Homepage（Phase 23：首页装修 —— 文案 + 主图）===== */}
+      {tab === "homepage" && hpForm && (
+        <>
+          <h3 style={{ margin: "28px 0 4px" }}>首页装修 — 主图与文案（中/英双语，留空 = 用默认）</h3>
+          <p className="muted" style={{ fontSize: 12, margin: "0 0 16px" }}>
+            首页 Hero 区 + 两个商品区块标题的文案都在这里改，保存后前台即时生效（清空字段即回落默认文案）。
+          </p>
+          <div style={{ maxWidth: 760 }}>
+            <div style={{ marginBottom: 16 }}>
+              <label htmlFor="hp-img">首页主图 URL（留空 = 内置默认图）</label>
+              <input
+                id="hp-img"
+                value={hpForm.heroImage}
+                onChange={(e) => setHpForm({ ...hpForm, heroImage: e.target.value })}
+                placeholder="https://…（3:4 竖图为佳）"
+              />
+              {hpForm.heroImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={hpForm.heroImage} alt="" style={{ width: 120, borderRadius: 8, marginTop: 8, border: "1px solid var(--border)" }} />
+              ) : null}
+            </div>
+            {[["zh", "中文文案"], ["en", "English 文案"]].map(([lang, label]) => (
+              <div key={lang} style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 16, marginBottom: 14 }}>
+                <b style={{ display: "block", marginBottom: 10 }}>{label}</b>
+                {[
+                  ["heroEyebrow", "眉头小标签"],
+                  ["heroH1", "主标题"],
+                  ["heroLede", "副标题文案"],
+                  ["ctaFind", "主按钮文字"],
+                  ["ctaShop", "次按钮文字"],
+                  ["recH2", "AI 推荐区块标题"],
+                  ["topH2", "高分好评区块标题"],
+                ].map(([field, zhLabel]) => (
+                  <div key={field} style={{ marginBottom: 10 }}>
+                    <label htmlFor={`hp-${lang}-${field}`}>{zhLabel}</label>
+                    {field === "heroLede" ? (
+                      <textarea
+                        id={`hp-${lang}-${field}`}
+                        rows={2}
+                        style={{ width: "100%", fontFamily: "inherit" }}
+                        value={hpForm[lang][field]}
+                        placeholder={HOME_TEXT[lang][field]}
+                        onChange={(e) => setHpForm({ ...hpForm, [lang]: { ...hpForm[lang], [field]: e.target.value } })}
+                      />
+                    ) : (
+                      <input
+                        id={`hp-${lang}-${field}`}
+                        value={hpForm[lang][field]}
+                        placeholder={HOME_TEXT[lang][field]}
+                        onChange={(e) => setHpForm({ ...hpForm, [lang]: { ...hpForm[lang], [field]: e.target.value } })}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <button
+                className="btn btn-primary"
+                disabled={busy === "hp-save"}
+                onClick={() =>
+                  act("/api/admin/settings",
+                    { action: "homepage", homeContent: { zh: hpForm.zh, en: hpForm.en }, homeHeroImage: hpForm.heroImage },
+                    "hp-save", "首页装修已保存 —— 前台即时生效")
+                }
+              >
+                {busy === "hp-save" ? "保存中…" : "保存首页装修"}
+              </button>
+              <a className="btn btn-outline" href="/" target="_blank">查看首页</a>
+            </div>
+          </div>
         </>
       )}
 
@@ -528,6 +697,72 @@ export default function MerchantConsole() {
               )}
             </tbody>
           </table>
+        </>
+      )}
+
+      {/* ===== SEO（Phase 23：站点 SEO 设置）===== */}
+      {tab === "seo" && seoForm && (
+        <>
+          <h3 style={{ margin: "28px 0 4px" }}>SEO 设置 — 首页 meta（独立站自然流量入口）</h3>
+          <p className="muted" style={{ fontSize: 12, margin: "0 0 16px" }}>
+            标题/描述是搜索结果的门面；全部留空 = 使用默认。保存后即刻生效。
+          </p>
+          <div style={{ maxWidth: 640 }}>
+            <div style={{ marginBottom: 12 }}>
+              <label htmlFor="seo-title">SEO 标题（浏览器标签 + 搜索结果标题，≤60 字最佳）</label>
+              <input
+                id="seo-title"
+                value={seoForm.title}
+                placeholder="SOLFIT — AI 量脚选鞋，保证合脚"
+                onChange={(e) => setSeoForm({ ...seoForm, title: e.target.value })}
+              />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label htmlFor="seo-desc">SEO 描述（搜索结果摘要，≤160 字最佳）</label>
+              <textarea
+                id="seo-desc"
+                rows={3}
+                style={{ width: "100%", fontFamily: "inherit" }}
+                value={seoForm.description}
+                placeholder="60 秒 AI 量脚，精准匹配专属楦型 —— 每一双都附免费换码保证。"
+                onChange={(e) => setSeoForm({ ...seoForm, description: e.target.value })}
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label htmlFor="seo-kw">关键词（逗号分隔，辅助主题信号）</label>
+              <input
+                id="seo-kw"
+                value={seoForm.keywords}
+                placeholder="AI 量脚, 合脚运动鞋, 宽脚鞋, 免费换码"
+                onChange={(e) => setSeoForm({ ...seoForm, keywords: e.target.value })}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 20 }}>
+              <button
+                className="btn btn-primary"
+                disabled={busy === "seo-save"}
+                onClick={() =>
+                  act("/api/admin/settings",
+                    { action: "seo", title: seoForm.title, description: seoForm.description, keywords: seoForm.keywords },
+                    "seo-save", "SEO 设置已保存 —— 首页 meta 即刻生效")
+                }
+              >
+                {busy === "seo-save" ? "保存中…" : "保存 SEO 设置"}
+              </button>
+              <a className="btn btn-outline" href="/sitemap.xml" target="_blank">查看 sitemap</a>
+            </div>
+
+            <div className="product-card" style={{ padding: 16 }}>
+              <b>SEO 体系现状（本站自动接管的部分）</b>
+              <ul className="muted" style={{ fontSize: 12, lineHeight: 1.9, margin: "8px 0 0", paddingLeft: 18 }}>
+                <li><b>sitemap.xml</b>：商品 + 已发布文章自动收录（下架/下线即刻退出）</li>
+                <li><b>robots.txt</b>：已配置（/admin 全系 noindex，本后台不会被收录）</li>
+                <li><b>文章 SEO</b>：「内容」标签发布的文章自动注入 Article JSON-LD；摘要即 meta description</li>
+                <li><b>商品 SEO</b>：商品页 meta 自动取商品名/描述，Product JSON-LD 含价格与库存态</li>
+                <li><b>多语言</b>：cookie 切换中/英（Phase 2 迁 /zh /en 路由 + hreflang 后本设置对两个 locale 生效）</li>
+              </ul>
+            </div>
+          </div>
         </>
       )}
 

@@ -16,7 +16,8 @@ export default function MerchantPage() {
       <p className="eyebrow">商家运营</p>
       <h1 style={{ fontSize: 36, marginBottom: 8 }}>商家操作台</h1>
       <p className="muted" style={{ marginBottom: 8 }}>
-        订单发货（paid → shipped）· 库存矩阵与低码补货 · 经营速览（GMV / 售后 / 缺码）
+        主题模板（10 套 UI 一键换）· 首页装修（文案/主图）· 商品上架与管理 · 订单发货 · 库存补货 ·
+        优惠码 · 内容（AI + SEO）· SEO 设置 · 评价审核 · 会员运营
       </p>
       <MerchantConsole />
     </div>

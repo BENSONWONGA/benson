@@ -1,13 +1,16 @@
 /**
- * lib/themes — 首页 UI 模板体系（≥10 套 · cookie 驱动 SSR 生效）
+ * lib/themes — 首页 UI 模板体系（≥10 套）
  *
  * 设计：全部主题只是 :root CSS 变量的覆盖集 —— 结构零改动、组件零感知。
- * 骨架期约定：cookie `solfit_theme` 持久化访客选择（Phase 2 商家后台可设
- * 站点默认主题：store("settings") 落 defaultTheme，访客 cookie 优先）。
+ * 生效优先级（Phase 23 商家后台"主题模板"可管）：
+ *   店主锁定（themeLocked）> 访客 cookie `solfit_theme` > 站点默认（settings.theme）
+ * 锁定时 ThemePicker 前台隐藏（page.jsx 控制），全站统一门面。
  *
  * 暗色主题（noir/midnight）需覆盖全量文字/表面变量（btn-primary 用 --ink
  * 反转、announce/footer 背景用 --ink —— 自动适配，无需额外规则）。
  */
+
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const DEFAULT_THEME = "solfit";
 
@@ -95,10 +98,12 @@ export const THEMES = [
 
 const byId = new Map(THEMES.map((t) => [t.id, t]));
 
-/** 由 cookie 取主题（非法值回落默认 —— cookie 是不可信输入） */
+/** 由 cookie + 站点设置取主题（锁定 > 访客 cookie > 站点默认；非法值回落默认） */
 export function getThemeFromCookies(jar) {
+  const settings = getSiteSettings();
+  if (settings.themeLocked) return byId.get(settings.theme) || byId.get(DEFAULT_THEME);
   const id = jar.get("solfit_theme")?.value;
-  return byId.get(id) || byId.get(DEFAULT_THEME);
+  return byId.get(id) || byId.get(settings.theme) || byId.get(DEFAULT_THEME);
 }
 
 /** 主题 → :root 覆盖 CSS（默认主题返回空串 = 零成本） */
