@@ -37,10 +37,19 @@ import { variantLift } from "./model";
 
 export const EXPERIMENT_ID = "rec_v2";
 
-/** 变体注册表（id + 静态权重兜底；bandit 治理时权重被动态分配取代） */
+/**
+ * 对照臂（Phase 11 增量测量）：固定 CONTROL_WEIGHT 流量走"无个性化"服务。
+ * 它是测量基线不是竞争者 —— bandit 永不优化它、永不裁决它；
+ * 个性化臂与它的转化率差 = 推荐系统的真实增量（attribution.js 只能给"在场率"）。
+ */
+export const CONTROL_ID = "control";
+const CONTROL_WEIGHT = 5;
+
+/** 变体注册表（id + 静态权重兜底；bandit 治理时竞争臂权重被动态分配取代） */
 export const VARIANTS = [
-  { id: "baseline", weight: 50 },  // 对照：Phase 3 规则路径
-  { id: "vector_lr", weight: 50 }, // 实验：向量召回 + 学习排序
+  { id: "baseline", weight: 50 },  // 对照组：Phase 3 规则路径
+  { id: "vector_lr", weight: 50 }, // 实验组：向量召回 + 学习排序
+  { id: CONTROL_ID, weight: CONTROL_WEIGHT }, // 测量对照臂：无个性化，固定 5%
 ];
 
 // ===== 治理参数（证据门槛 + 裁决阈值 —— 运营可调，但默认值即工程共识） =====
@@ -128,7 +137,8 @@ export function evaluateExperiment() {
   const newVerdicts = [];
   for (const v of VARIANTS) {
     const id = v.id;
-    if (id === "baseline" || _state.retired.includes(id)) continue; // 基线是参照系，永不退役
+    // 基线是参照系永不退役；对照臂是测量基线永不裁决 —— 只裁真正的挑战者
+    if (id === "baseline" || id === CONTROL_ID || _state.retired.includes(id)) continue;
     const ch = byId[id];
     if (!ch || ch.liftVsBaselinePct === null) continue; // 证据未成形 → 不裁
     if (ch.decided < MIN_DECIDED || (base?.decided || 0) < MIN_DECIDED) continue; // 证据门：双侧都要过
@@ -141,28 +151,30 @@ export function evaluateExperiment() {
     }
   }
 
-  // ===== 2) champion：证据充分的活跃变体中 CTR 最高者 =====
+  // ===== 2) champion：证据充分的活跃"竞争臂"中 CTR 最高者（对照臂不参赛） =====
   const activeIds = VARIANTS.map((v) => v.id).filter((id) => !_state.retired.includes(id));
-  const eligible = activeIds
+  const contenderIds = activeIds.filter((id) => id !== CONTROL_ID);
+  const eligible = contenderIds
     .map((id) => byId[id])
     .filter((l) => l && l.decided >= MIN_DECIDED && l.ctr !== null);
-  // 需要两个以上合格臂才有比较意义；唯一活跃臂时直接称王（kill 退役后的终态）
+  // 需要两个以上合格臂才有比较意义；唯一竞争臂时直接称王（kill 退役后的终态）
   _state.champion =
     eligible.length > 1
       ? eligible.reduce((best, x) => (x.ctr > best.ctr ? x : best)).variant
-      : eligible.length === 1 && activeIds.length === 1
+      : eligible.length === 1 && contenderIds.length === 1
         ? eligible[0].variant
         : null;
 
-  // ===== 3) ε-greedy 分配 =====
-  const raw = {};
+  // ===== 3) ε-greedy 分配（对照臂恒定 CONTROL_WEIGHT，竞争臂分剩余流量） =====
+  const budget = 100 - CONTROL_WEIGHT;
+  const raw = { [CONTROL_ID]: CONTROL_WEIGHT };
   if (!_state.champion) {
-    // 无冠军（证据不足）→ 活跃变体均分 100（保持灰度语义，绝不赌单臂）
-    for (const id of activeIds) raw[id] = 100 / activeIds.length;
+    // 无冠军（证据不足）→ 竞争臂均分预算（保持灰度语义，绝不赌单臂）
+    for (const id of contenderIds) raw[id] = budget / contenderIds.length;
   } else {
-    for (const id of activeIds) raw[id] = id === _state.champion ? (1 - eps) * 100 : 0;
-    const challengers = activeIds.filter((id) => id !== _state.champion);
-    for (const id of challengers) raw[id] = (eps * 100) / challengers.length;
+    for (const id of contenderIds) raw[id] = id === _state.champion ? (1 - eps) * budget : 0;
+    const challengers = contenderIds.filter((id) => id !== _state.champion);
+    for (const id of challengers) raw[id] = (eps * budget) / challengers.length;
   }
   for (const v of VARIANTS) raw[v.id] = raw[v.id] ?? 0; // 全变体覆盖（退役/未知补零）
   _state.allocation = normalizeWeights(raw, VARIANTS.map((v) => v.id));
@@ -206,13 +218,13 @@ export function setAllocation(weights, { mode = "manual" } = {}) {
   return banditState();
 }
 
-/** 终局动作：实验结论落账 + 赢家吃 90%（保留 10% 对照 —— 回归监测需要活对照臂） */
+/** 终局动作：实验结论落账 + 竞争臂赢家吃 90%（对照臂恒定 5% —— 增量测量永不下线） */
 export function concludeExperiment() {
   const { lift } = evaluateExperiment();
   const winner = _state.champion || "baseline";
-  const losers = VARIANTS.map((v) => v.id).filter((id) => id !== winner);
-  const raw = { [winner]: 90 };
-  for (const id of losers) raw[id] = 10 / losers.length; // 均分 10%
+  const challengers = VARIANTS.map((v) => v.id).filter((id) => id !== winner && id !== CONTROL_ID);
+  const raw = { [winner]: 95 - CONTROL_WEIGHT, [CONTROL_ID]: CONTROL_WEIGHT };
+  for (const id of challengers) raw[id] = 0; // 终局：输掉的竞争臂退役为 0（对照臂除外）
   _state.allocation = normalizeWeights(raw, VARIANTS.map((v) => v.id));
   _state.mode = "manual"; // 终局后停止自动摇摆，重启实验需显式复位（setAllocation mode=adaptive）
   const log = store("experimentDecisions");

@@ -118,7 +118,9 @@ export function maybeTrain({ force = false, now = Date.now() } = {}) {
   if (!force && now - _model.lastTrainAt < RETRAIN_INTERVAL_MS) return modelState();
   _model.lastTrainAt = now;
 
-  const samples = labelSamples(store("recTrainingSet"), now);
+  // 训练只用个性化臂样本 —— control 臂（无特征快照）是测量基线不是训练数据，
+  // 全零特征行只会污染 bias 学习（Phase 11 隔离）
+  const samples = labelSamples(store("recTrainingSet"), now).filter((s) => s.variant !== "control");
   const positives = samples.filter((s) => s.y === 1).length;
 
   _model.samples = samples.length;
@@ -183,12 +185,14 @@ export function ruleWeights() {
   return { weights: RULE_WEIGHTS, bias: 0 };
 }
 
-/** 印象落库 —— recommend() 每次服务时记录 top-K 的印象时刻特征快照 */
+/** 印象落库 —— recommend() 每次服务时记录 top-K 的印象时刻特征快照。
+ *  Phase 11：对照臂（control）的印象无特征快照（无个性化路径不走特征抽取），
+ *  features 落 {} —— 供 variantLift/归因计数；maybeTrain 会把 control 样本隔离出训练。 */
 export function logImpression({ sessionId, variant, ranked, max }) {
   const buf = store("recTrainingSet");
   for (const r of ranked.slice(0, max)) {
-    if (!r.features) continue;
-    buf.push({ sessionId, productId: r.product.id, variant, features: r.features, ts: new Date().toISOString() });
+    if (!r?.product) continue;
+    buf.push({ sessionId, productId: r.product.id, variant, features: r.features ?? {}, ts: new Date().toISOString() });
   }
   while (buf.length > MAX_SAMPLES) buf.shift();
 }
