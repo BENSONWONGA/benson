@@ -14,6 +14,7 @@ import { getProduct } from "@/modules/catalog/service";
 import { decrementStock, restock } from "@/modules/inventory/service";
 import { issueTrackingNumber, zoneFor } from "@/modules/shipping/service";
 import { createPaymentIntent } from "@/modules/payment/service";
+import { computeCheckoutDiscounts, settleOrderLoyalty } from "@/modules/loyalty/service";
 
 /**
  * 下单（由 /api/checkout place 调用，前端不直接传金额）
@@ -24,7 +25,7 @@ export async function createOrder(sessionId, payload) {
   const cart = getCart(sessionId);
   if (!cart.items.length) throw new Error("EMPTY_CART");
 
-  const { email, address, shippingMethod, taxQuote, currency = "USD", fxRate = 1 } = payload;
+  const { email, address, shippingMethod, taxQuote, currency = "USD", fxRate = 1, promoCode, pointsToRedeem } = payload;
   if (!email || !address?.country || !shippingMethod?.id) throw new Error("MISSING_FIELDS");
   if (!address?.name || !address?.street || !address?.city || !address?.zip) throw new Error("MISSING_FIELDS");
 
@@ -38,9 +39,11 @@ export async function createOrder(sessionId, payload) {
       return { ...i, name: p?.name, unitPrice: p?.price, lineTotal: Math.round((p?.price || 0) * i.qty * 100) / 100 };
     }));
     const subtotal = Math.round(items.reduce((s, i) => s + i.lineTotal, 0) * 100) / 100;
+    // Phase 19 折扣（服务端统一验签计价；无效码/超额积分直接抛错 —— 宁可不折不可算错）
+    const discounts = computeCheckoutDiscounts({ sessionId, subtotal, promoCode, pointsToRedeem });
     const shipping = Math.round((shippingMethod.finalPrice ?? shippingMethod.price) * 100) / 100;
-    const tax = Math.round((taxQuote?.amount || 0) * 100) / 100;
-    const total = Math.round((subtotal + shipping + tax) * 100) / 100;
+    const tax = Math.round((taxQuote?.amount || 0) * 100) / 100; // 税基为折前小计（骨架期口径，注释见 totals）
+    const total = Math.round((subtotal - discounts.promoDiscount - discounts.pointsDiscount + shipping + tax) * 100) / 100;
 
     const orderId = "SO-" + Date.now().toString(36).toUpperCase();
 
@@ -62,7 +65,15 @@ export async function createOrder(sessionId, payload) {
       fxRate,
       taxRule: { type: taxQuote?.type, label: taxQuote?.label, rate: taxQuote?.rate, provider: taxQuote?.provider },
       items,
-      totals: { subtotal, shipping, tax, total },
+      // 折扣明细全量落单（客诉/财务对账唯一事实；税基为折前小计 —— 跨境促销合规简化口径）
+      totals: {
+        subtotal, shipping, tax, total,
+        promoDiscount: discounts.promoDiscount,
+        pointsDiscount: discounts.pointsDiscount,
+        pointsRedeemed: discounts.pointsRedeemed,
+      },
+      promoCode: discounts.promo?.code ?? null,
+      loyalty: null, // 落单后由 settleOrderLoyalty 回填（earned/tier 快照）
       shippingMethod: { id: shippingMethod.id, name: shippingMethod.name, zone: shippingMethod.zone },
       tracking: issueTrackingNumber(),
       payment,
@@ -73,6 +84,12 @@ export async function createOrder(sessionId, payload) {
     store("orders").set(order.id, order);
     store("carts").set(sessionId, { items: [] }); // 清购物车
     if (bound) store("userCarts").delete(bound.userId); // 账户车镜像同清（跨设备不残留已购清单）
+    // 会员结算（Phase 19）：累计实付/积分赚取/积分扣减/优惠码计数 —— 订单快照回填后落库
+    order.loyalty = settleOrderLoyalty({
+      sessionId, orderTotal: total,
+      promoCode: order.promoCode, pointsRedeemed: discounts.pointsRedeemed,
+    });
+    store("orders").set(order.id, order);
     trackEvent("order_created", {
       orderId: order.id, sessionId, region: order.region,
       total: order.totals.total, currency,

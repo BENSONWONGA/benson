@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { isAdmin, merchantStats, listOrders, listInventory } from "@/modules/merchant/service";
+import { isAdmin, merchantStats, listOrders, listInventory, adminListProducts } from "@/modules/merchant/service";
+import { adminListPromos } from "@/modules/loyalty/service";
+import { adminListPosts } from "@/modules/content/service";
 import { observed } from "@/lib/observe";
 
 /**
  * GET /api/admin/overview — 商家后台一站式数据源（10s 轮询端点）
- * { stats, orders, inventory }：经营速览 + 全量订单摘要 + 库存矩阵。
+ * { stats, orders, inventory, products, promos, posts }。
  * 门禁：x-admin-token（merchant 域 isAdmin）。
  */
 export const dynamic = "force-dynamic";
@@ -18,6 +20,9 @@ export async function GET(request) {
         stats: merchantStats(),
         orders: listOrders(),
         inventory: listInventory(),
+        products: adminListProducts(),
+        promos: adminListPromos(),
+        posts: adminListPosts(),
       },
     });
   });

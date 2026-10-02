@@ -4,7 +4,8 @@ import { deleteProfile } from "@/modules/customer/service";
 import { cacheDelByPrefix } from "@/lib/cache";
 import { purgeSessionData as purgeMarketingData } from "@/modules/notification/service";
 import { purgeSessionFeedback } from "@/ai/recommender/feedback";
-import { purgeAccount } from "@/modules/auth/service";
+import { purgeAccount, boundUserId } from "@/modules/auth/service";
+import { purgeSessionReviews, anonymizeUserReviews } from "@/modules/reviews/service";
 
 /**
  * GDPR 被遗忘权 — POST /api/privacy/erase
@@ -58,10 +59,16 @@ export async function POST(request) {
 
   // 账户级三清（Phase 16）：用户记录 / 跨设备车 / 反馈 user 键 / 会话绑定；
   // 订单脱关联（userId+email 置 NULL，财务记录保留）—— 与 sessionId 口径一致
+  const uidBeforePurge = boundUserId(sessionId); // 账户评价匿名化在绑定销毁前取 userId
   const account = purgeAccount(sessionId);
   removed.account = account.account;
   removed.userCart = account.userCarts;
   removed.attributedOrders = account.attributedOrders;
+
+  // 评价（Phase 18）：本会话评价整条删除（含个人关联）；已删账户的存量评价
+  // 匿名化（正文是 UGC 资产保留，作者身份脱敏）
+  removed.reviews = purgeSessionReviews(sessionId);
+  removed.reviewsAnonymized = account.account ? anonymizeUserReviews(uidBeforePurge) : 0;
 
   // 本会话个性化推荐缓存立刻失效（否则 60s 内仍返回基于已删数据的推荐）
   await cacheDelByPrefix(`rec:${sessionId}:`);

@@ -4,6 +4,7 @@ import { currentUser, boundUserId } from "@/modules/auth/service";
 import { ordersForUser } from "@/modules/order/service";
 import { getFeedback } from "@/ai/recommender/feedback";
 import { getProduct } from "@/modules/catalog/service";
+import { loyaltyStatus } from "@/modules/loyalty/service";
 import LogoutButton from "@/components/LogoutButton";
 
 /**
@@ -21,6 +22,7 @@ export default async function AccountPage() {
   if (!user) redirect("/login");
 
   const orders = ordersForUser(sessionId, boundUserId(sessionId));
+  const loyalty = loyaltyStatus(sessionId); // Phase 19 会员卡（游客登录后即见）
   const wishlist = await Promise.all(
     (getFeedback(sessionId).saved || []).map(async (p) => ({ ...p, ...(await getProduct(p.id)) }))
   );
@@ -35,6 +37,29 @@ export default async function AccountPage() {
       <p className="muted" style={{ marginTop: 8 }}>
         {user.email} · member since {user.createdAt.slice(0, 10)}
       </p>
+
+      {/* ===== 会员卡（Phase 19）：等级/积分/倍率/升级进度 ===== */}
+      {loyalty.loggedIn ? (
+        <div className="product-card" style={{ padding: 18, marginTop: 20, display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
+          <div>
+            <span className="badge">{loyalty.tier.name}</span>
+            <div style={{ fontWeight: 800, fontSize: 22, marginTop: 8 }}>{loyalty.points.toLocaleString()} points</div>
+            <div className="muted" style={{ fontSize: 13 }}>
+              worth ${loyalty.pointsValue} · {loyalty.tier.multiplier}× points per $1 spent · lifetime ${loyalty.lifetimeSpend.toLocaleString()}
+            </div>
+          </div>
+          <div style={{ marginLeft: "auto", textAlign: "right", fontSize: 13 }}>
+            {loyalty.nextTier ? (
+              <span className="muted">
+                ${(loyalty.nextTier.minSpend - loyalty.lifetimeSpend).toFixed(0)} more to <b>{loyalty.nextTier.name}</b> ({loyalty.nextTier.multiplier}×)
+              </span>
+            ) : (
+              <span style={{ color: "var(--fit)" }}>✓ Top tier — 2× points on every order</span>
+            )}
+            <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>Write a product review → +50 points</div>
+          </div>
+        </div>
+      ) : null}
 
       {/* ===== 我的订单 ===== */}
       <h2 style={{ fontSize: 20, margin: "40px 0 12px" }}>Orders</h2>

@@ -1,7 +1,8 @@
 /**
  * components/ProductClient — PDP 交互岛（客户端）
  * 1) 宽窄/尺码选择 + 加购 → POST /api/cart
- * 2) AI Size Finder 三步向导 → POST /api/ai/size-recommendation（含楦型校验）
+ * 2) AI Size Finder 向导 → 问卷（/api/ai/size-recommendation）
+ *    或拍照量脚（/api/ai/foot-scan · V2 骨架：照片+卡片参照 / 卷尺实测）
  * 档案沉淀在服务端（modules/customer），刷新后仍预选
  */
 
@@ -16,8 +17,9 @@ export default function ProductClient({ product }) {
   const [qty, setQty] = useState(1);
   const [toast, setToast] = useState(null);
   const [finderOpen, setFinderOpen] = useState(false);
-  const [finderStep, setFinderStep] = useState("form"); // form | scanning | result
+  const [finderStep, setFinderStep] = useState("form"); // form | scan | scanning | result
   const [rec, setRec] = useState(null);
+  const [scanPreview, setScanPreview] = useState(null); // 照片本地预览（不上传到任何存储）
 
   const notify = (msg) => {
     setToast(msg);
@@ -79,6 +81,27 @@ export default function ProductClient({ product }) {
     setFinderStep("result");
   }
 
+  /** 拍照量脚（V2 骨架）：FormData → /api/ai/foot-scan（照片不落库） */
+  async function submitScan(e) {
+    e.preventDefault();
+    const f = e.target.elements;
+    const fd = new FormData();
+    if (f.photo.files[0]) fd.append("photo", f.photo.files[0]);
+    fd.append("productId", product.id);
+    if (f.manualLengthCm.value) fd.append("manualLengthCm", f.manualLengthCm.value);
+    if (f.manualWidthCm.value) fd.append("manualWidthCm", f.manualWidthCm.value);
+    setFinderStep("scanning");
+    const res = await fetch("/api/ai/foot-scan", { method: "POST", body: fd });
+    const json = await res.json();
+    if (json.code === 0) {
+      setRec(json.data);
+      setFinderStep("result");
+    } else {
+      setFinderStep("scan");
+      notify(json.message || "Scan failed");
+    }
+  }
+
   return (
     <div>
       <div>
@@ -136,6 +159,15 @@ export default function ProductClient({ product }) {
 
             {finderStep === "form" ? (
               <form className="finder-form" onSubmit={submitFinder}>
+                <div style={{ marginBottom: 14, padding: 12, border: "1px dashed var(--border)", borderRadius: 10 }}>
+                  <b style={{ fontSize: 13 }}>Faster: photograph your foot</b>
+                  <p className="muted" style={{ fontSize: 12, margin: "6px 0 10px" }}>
+                    Stand on paper with a credit card beside your foot — we read the measurements from one photo.
+                  </p>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setFinderStep("scan")}>
+                    Scan with a photo →
+                  </button>
+                </div>
                 <div>
                   <label htmlFor="usualSize">Your usual size (EU)</label>
                   <select id="usualSize" name="usualSize" required>
@@ -163,7 +195,41 @@ export default function ProductClient({ product }) {
                   ))}
                 </div>
                 <button className="btn btn-fit" type="submit">Scan &amp; find my size</button>
-                <p className="muted">V2 接入点：此步换手机摄像头量脚（CV 测脚长/宽/脚背）</p>
+                <p className="muted">No photo? The questionnaire alone works — it cross-checks your usual brands.</p>
+              </form>
+            ) : null}
+
+            {finderStep === "scan" ? (
+              <form className="finder-form" onSubmit={submitScan}>
+                <div>
+                  <label htmlFor="photo">Foot photo (credit card beside your foot)</label>
+                  <input
+                    id="photo" name="photo" type="file" accept="image/png,image/jpeg,image/gif"
+                    capture="environment"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      setScanPreview(file ? URL.createObjectURL(file) : null);
+                    }}
+                    required
+                  />
+                  {scanPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={scanPreview} alt="Foot preview" style={{ marginTop: 8, width: "100%", maxHeight: 180, objectFit: "contain", borderRadius: 10, border: "1px solid var(--border)" }} />
+                  ) : null}
+                  <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    Stand on paper, card lengthwise beside your heel, shoot straight from above. Photo is analyzed and discarded — never stored.
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="manualLengthCm">Measured length in cm (optional — beats the camera)</label>
+                  <input id="manualLengthCm" name="manualLengthCm" type="number" step="0.1" min="18" max="35" placeholder="e.g. 25.4" />
+                  <label htmlFor="manualWidthCm" style={{ marginTop: 8 }}>Measured width in cm (optional)</label>
+                  <input id="manualWidthCm" name="manualWidthCm" type="number" step="0.1" min="7" max="14" placeholder="e.g. 9.8" />
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn btn-outline btn-sm" type="button" onClick={() => setFinderStep("form")}>← Back</button>
+                  <button className="btn btn-fit" type="submit">Scan my foot</button>
+                </div>
               </form>
             ) : null}
 
@@ -174,6 +240,12 @@ export default function ProductClient({ product }) {
                 <div className="eyebrow">Your SOLFIT size</div>
                 <div className="size">EU {rec.finalSize}</div>
                 <div className="conf">{rec.confidence}% fit confidence · {rec.width} width</div>
+                {rec.measurements ? (
+                  <p className="muted" style={{ fontSize: 12 }}>
+                    {rec.measurements.lengthCm} cm × {rec.measurements.widthCm} cm
+                    {rec.source === "manual" ? " · tape-measured" : rec.source === "photo" ? " · photo scan (skeleton — verify before you buy)" : ""}
+                  </p>
+                ) : null}
                 <p>{rec.reason}</p>
                 <p className="muted">Last {product.lastCode} adjustment: {rec.productAdjustment?.note}</p>
                 <button

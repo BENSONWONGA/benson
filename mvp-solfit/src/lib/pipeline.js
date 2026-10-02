@@ -34,6 +34,19 @@ export const EVENT_SCHEMA = {
   // ===== 商家操作（merchant 域）=====
   order_shipped: { orderId: "string", region: "string" },
   inventory_restocked: { lines: "number", qty: "number" },
+  // ===== 商品运营（catalog 域 · Phase 17）=====
+  product_created: { productId: "number", name: "string", price: "number" },
+  product_updated: { productId: "number", price: "number" },
+  product_listed: { productId: "number", listed: "boolean" },
+  // ===== 商品评价（reviews 域 · Phase 18；评论正文是 UGC —— 不落管道，只审计计数）=====
+  review_created: { productId: "number", rating: "number", verified: "boolean" },
+  // ===== 会员/积分/优惠码（loyalty 域 · Phase 19）=====
+  points_earned: { points: "number", reason: "string" },
+  promo_applied: { code: "string", discount: "number" },
+  promo_created: { code: "string", type: "string", value: "number" },
+  // ===== 内容与试鞋（content/tryon 域 · Phase 20；文章正文/照片不落管道）=====
+  post_published: { slug: "string", published: "boolean" },
+  ai_foot_scan: { confidence: "number", model: "string" },
   // ===== AI 服务 =====
   ai_size_recommended: { profile: "object", size: "string", width: "string", confidence: "number" },
   ai_stylist_message: {}, // 用户消息原文是 PII —— 只计数，字段不落管道

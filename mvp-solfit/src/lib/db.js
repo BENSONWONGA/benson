@@ -32,6 +32,10 @@ const _stores = {
   users: new Map(),           // userId -> User（Phase 16 账户域；PG: users 表，008 迁移已建）
   userSessions: new Map(),   // sessionId -> {userId, at}（Phase 16 会话绑定；运行时态不落 PG）
   userCarts: new Map(),      // userId -> 购物车快照（Phase 16 跨设备合并；PG: user_carts）
+  products: new Map(),       // productId -> Product（Phase 17 store 化；种子由 catalog ensureSeed 灌入；PG: products 表）
+  reviews: [],               // 商品评价（Phase 18；已购验证 + 匿名展示；PG: reviews 表）
+  promoCodes: new Map(),     // code -> 优惠码定义（Phase 19；PG: promo_codes 表）
+  posts: new Map(),          // slug -> 博客文章（Phase 20 SEO 内容；PG: posts 表）
 };
 
 export function store(name) {

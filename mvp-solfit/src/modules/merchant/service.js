@@ -14,8 +14,18 @@
 
 import { timingSafeEqual } from "crypto";
 import { store, trackEvent } from "@/lib/db";
-import { PRODUCTS } from "@/data/products";
+import {
+  allProducts, createProduct, updateProduct, setListed,
+} from "@/modules/catalog/service";
 import { restock, getStock } from "@/modules/inventory/service";
+import { syncProductVectors } from "@/ai/recommender/vector-store";
+
+const NEW_PRODUCT_STOCK = 6; // 新建商品每码初始库存
+
+/** 目录变更后的向量重刷（fire-and-forget：PG 抖动不挡商品操作，降级内存召回兜底） */
+function refreshVectors() {
+  syncProductVectors({ force: true }).catch(() => {});
+}
 
 // ===== 鉴权 =====
 
@@ -74,13 +84,14 @@ export function markShipped(orderId, { tracking } = {}) {
 
 // ===== 库存 =====
 
-/** 全量库存矩阵：商品 × 尺码（0 码红 / 低于 3 黄，前端染色） */
+/** 全量库存矩阵：商品 × 尺码（0 码红 / 低于 3 黄，前端染色；含未上架商品 —— 商家视图） */
 export function listInventory() {
-  return PRODUCTS.map((p) => ({
+  return allProducts().map((p) => ({
     id: p.id,
     name: p.name,
     category: p.category,
     price: p.price,
+    listed: p.listed !== false,
     sizes: p.sizes.map((s) => ({ size: s, stock: getStock(p.id, s) })), // getStock 内含 ensureSeed
   }));
 }
@@ -105,7 +116,7 @@ export async function restockMany(items) {
 
 /** 一键补货低库存：给商品所有 stock<target 的尺码补到 target（默认 6） */
 export async function restockLowSizes(productId, target = 6) {
-  const product = PRODUCTS.find((p) => p.id === Number(productId));
+  const product = allProducts().find((p) => p.id === Number(productId));
   if (!product) throw new Error("PRODUCT_NOT_FOUND");
   const items = product.sizes
     .map((s) => ({ productId: product.id, size: s, qty: Math.max(0, target - getStock(product.id, s)) }))
@@ -126,8 +137,9 @@ export function merchantStats() {
   const orders = [...store("orders").values()];
   const isSettled = (o) => o.status !== "pending_payment" && o.status !== "payment_failed";
   const settled = orders.filter(isSettled);
+  const products = allProducts();
   let lowStock = 0;
-  for (const p of PRODUCTS) for (const s of p.sizes) if (getStock(p.id, s) === 0) lowStock++;
+  for (const p of products) for (const s of p.sizes) if (getStock(p.id, s) === 0) lowStock++;
 
   return {
     orders: orders.length,
@@ -137,5 +149,60 @@ export function merchantStats() {
     afterSales: orders.filter((o) => o.status === "exchanged" || o.status === "returned").length,
     oosSizes: lowStock,
     registeredUsers: store("users").size,
+    products: products.length,
+    unlisted: products.filter((p) => p.listed === false).length,
   };
+}
+
+// ===== 商品运营编排（Phase 17；CRUD 本体在 catalog 域，本层补库存/向量联动）=====
+
+/** 商家商品视图：全目录（含下架）+ 库存汇总，供 Catalog tab 与 overview 轮询 */
+export function adminListProducts() {
+  return allProducts().map((p) => {
+    const stocks = p.sizes.map((s) => getStock(p.id, s));
+    return {
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      category: p.category,
+      heel: p.heel,
+      widths: p.widths,
+      price: p.price,
+      compareAt: p.compareAt,
+      image: p.image,
+      desc: p.desc,
+      features: p.features,
+      badge: p.badge,
+      sizes: p.sizes,
+      lastCode: p.lastCode,
+      rating: p.rating,
+      reviewsCount: p.reviewsCount,
+      listed: p.listed !== false,
+      stock: stocks.reduce((s, x) => s + x, 0),
+      oosCount: stocks.filter((x) => x === 0).length,
+      createdAt: p.createdAt ?? null,
+    };
+  });
+}
+
+/** 新建商品 = catalog.createProduct + 每码初始库存 + 向量重刷（fire-and-forget） */
+export async function adminCreateProduct(payload) {
+  const product = createProduct(payload);
+  for (const size of product.sizes) await restock(product.id, size, NEW_PRODUCT_STOCK);
+  refreshVectors(); // 推荐召回面即刻覆盖新商品（pgvector upsert）
+  return product;
+}
+
+/** 更新商品 = catalog.updateProduct + 向量重刷（价格/文案变化会改派生向量） */
+export function adminUpdateProduct(id, patch) {
+  const next = updateProduct(id, patch);
+  refreshVectors();
+  return next;
+}
+
+/** 上下架 = catalog.setListed + 向量重刷（召回层以 listed 商品为候选集） */
+export function adminSetListed(id, listed) {
+  const next = setListed(id, listed);
+  refreshVectors();
+  return next;
 }

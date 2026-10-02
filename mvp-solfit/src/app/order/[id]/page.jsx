@@ -45,6 +45,12 @@ export default function OrderPage({ params }) {
             </div>
           ))}
           <div className="sum-row"><span>Subtotal</span><b>{fmt(order.totals.subtotal)}</b></div>
+          {order.totals.promoDiscount > 0 ? (
+            <div className="sum-row"><span>Promo {order.promoCode}</span><b style={{ color: "var(--fit)" }}>−{fmt(order.totals.promoDiscount)}</b></div>
+          ) : null}
+          {order.totals.pointsDiscount > 0 ? (
+            <div className="sum-row"><span>Points ({order.totals.pointsRedeemed})</span><b style={{ color: "var(--fit)" }}>−{fmt(order.totals.pointsDiscount)}</b></div>
+          ) : null}
           <div className="sum-row"><span>Shipping ({order.shippingMethod.name})</span><b>{order.totals.shipping === 0 ? "Free" : fmt(order.totals.shipping)}</b></div>
           <div className="sum-row"><span>{order.taxRule.label}</span><b>{fmt(order.totals.tax)}</b></div>
           <div className="sum-row total"><span>Total ({order.currency})</span><b>{fmt(order.totals.total)}</b></div>

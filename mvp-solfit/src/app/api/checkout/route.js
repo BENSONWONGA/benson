@@ -5,6 +5,7 @@ import { getProduct } from "@/modules/catalog/service";
 import { methodsFor, getMethod } from "@/modules/shipping/service";
 import { quoteTax } from "@/modules/tax/service";
 import { createOrder } from "@/modules/order/service";
+import { validatePromo } from "@/modules/loyalty/service";
 import { FX_RATES } from "@/lib/currency";
 import { observed } from "@/lib/observe";
 
@@ -24,12 +25,27 @@ async function cartSubtotal(sessionId) {
   return sum;
 }
 
-async function quoteFor(sessionId, country) {
+async function quoteFor(sessionId, country, promoCode) {
   const subtotal = await cartSubtotal(sessionId);
   const methods = methodsFor(country, subtotal);
   const defaultMethod = methods.find((m) => m.id.endsWith("express")) || methods[0];
   const tax = quoteTax(country, subtotal, defaultMethod.finalPrice);
-  return { methods, method: defaultMethod, tax, totals: { subtotal, shipping: defaultMethod.finalPrice, tax: tax.amount } };
+  // 优惠码预览（Phase 19）：quote 是预览 —— 无效码软报错不阻断结算流程
+  let promo = null;
+  let promoDiscount = 0;
+  if (promoCode) {
+    try {
+      const v = validatePromo(promoCode, subtotal);
+      promo = { code: v.code, label: v.label, discount: v.discount };
+      promoDiscount = v.discount;
+    } catch (err) {
+      promo = { error: err.message };
+    }
+  }
+  return {
+    methods, method: defaultMethod, tax, promo,
+    totals: { subtotal, promoDiscount, shipping: defaultMethod.finalPrice, tax: tax.amount },
+  };
 }
 
 export async function POST(request) {
@@ -44,7 +60,7 @@ export async function POST(request) {
 
     try {
     if (body.action === "quote") {
-      const q = await quoteFor(sessionId, body.address?.country);
+      const q = await quoteFor(sessionId, body.address?.country, body.promoCode);
       return NextResponse.json({ code: 0, data: q });
     }
 
@@ -72,13 +88,18 @@ export async function POST(request) {
         currency,
         fxRate: FX_RATES[currency] ?? 1,
         paymentMethod: body.paymentMethod || "demo_card",
+        promoCode: body.promoCode || null,       // Phase 19 优惠码（服务端验签计价）
+        pointsToRedeem: body.pointsToRedeem || 0, // Phase 19 积分抵扣（100 分 = $1）
       });
       return NextResponse.json({ code: 0, data: order });
     }
 
     return NextResponse.json({ code: 400, message: "Unknown action" }, { status: 400 });
     } catch (err) {
-      const status = err.message === "OUT_OF_STOCK" ? 409 : 400;
+      // 折扣类错误（无效码/门槛/积分不足）→ 422：可修正的结算输入错误
+      const LOYALTY_ERRORS = ["INVALID_PROMO", "PROMO_EXPIRED", "PROMO_EXHAUSTED", "PROMO_MIN_SPEND",
+        "PROMO_EXISTS", "INSUFFICIENT_POINTS", "LOGIN_REQUIRED_FOR_POINTS", "POINTS_CAP_REACHED"];
+      const status = err.message === "OUT_OF_STOCK" ? 409 : LOYALTY_ERRORS.includes(err.message) ? 422 : 400;
       return NextResponse.json({ code: status, message: err.message, details: err.details }, { status });
     }
   });

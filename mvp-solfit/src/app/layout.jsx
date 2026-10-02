@@ -27,6 +27,7 @@ export default function RootLayout({ children }) {
               <a href="/shop">Shop</a>
               <a href="/">Why SOLFIT</a>
               <a href="/#fit-science">Fit Science</a>
+              <a href="/blog">Journal</a>
             </nav>
             <div className="header-actions">
               <CurrencySwitcher />
