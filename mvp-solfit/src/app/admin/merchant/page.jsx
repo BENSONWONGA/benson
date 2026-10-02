@@ -7,14 +7,14 @@
 
 import MerchantConsole from "@/components/MerchantConsole";
 
-export const metadata = { title: "Merchant console", robots: { index: false, follow: false } };
+export const metadata = { title: "商家操作台", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 export default function MerchantPage() {
   return (
     <div className="container" style={{ padding: "48px 24px 96px" }}>
-      <p className="eyebrow">Merchant operations</p>
-      <h1 style={{ fontSize: 36, marginBottom: 8 }}>Merchant console</h1>
+      <p className="eyebrow">商家运营</p>
+      <h1 style={{ fontSize: 36, marginBottom: 8 }}>商家操作台</h1>
       <p className="muted" style={{ marginBottom: 8 }}>
         订单发货（paid → shipped）· 库存矩阵与低码补货 · 经营速览（GMV / 售后 / 缺码）
       </p>

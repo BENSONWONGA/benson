@@ -21,6 +21,16 @@ const STATUS_COLOR = {
   payment_failed: "#C0392B",
 };
 
+/** 订单状态中文（后台全系中文口径） */
+const ORDER_STATUS_ZH = {
+  paid: "待发货",
+  shipped: "已发货",
+  exchanged: "已换货",
+  returned: "已退货",
+  pending_payment: "待支付",
+  payment_failed: "支付失败",
+};
+
 const fmtTime = (iso) => (iso || "").slice(0, 16).replace("T", " ");
 
 export default function MerchantConsole() {
@@ -94,10 +104,10 @@ export default function MerchantConsole() {
   if (!token) {
     return (
       <div style={{ maxWidth: 420, margin: "40px auto 0" }}>
-        <p className="eyebrow">Merchant console</p>
-        <h1 style={{ fontSize: 32, margin: "0 0 20px" }}>Staff sign-in</h1>
+        <p className="eyebrow">商家操作台</p>
+        <h1 style={{ fontSize: 32, margin: "0 0 20px" }}>员工登录</h1>
         <form className="finder-form" onSubmit={unlock}>
-          <label htmlFor="admin-token">Admin token</label>
+          <label htmlFor="admin-token">管理令牌</label>
           <input
             id="admin-token"
             type="password"
@@ -106,9 +116,9 @@ export default function MerchantConsole() {
             placeholder="x-admin-token"
             required
           />
-          {error && <p style={{ color: "#C0392B", fontSize: 13, margin: 0 }}>{error === "ADMIN_REQUIRED" ? "Wrong token." : error}</p>}
+          {error && <p style={{ color: "#C0392B", fontSize: 13, margin: 0 }}>{error === "ADMIN_REQUIRED" ? "令牌错误" : error}</p>}
           <button className="btn btn-primary" type="submit" disabled={!input}>
-            Unlock console
+            解锁后台
           </button>
         </form>
         <p className="muted" style={{ marginTop: 16, fontSize: 13 }}>
@@ -127,14 +137,14 @@ export default function MerchantConsole() {
       {/* ===== Tab 导航 ===== */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", margin: "28px 0 4px" }}>
         {[
-          ["overview", `Overview`],
-          ["orders", `Orders (${toShip.length} to ship)`],
-          ["inventory", `Inventory (${stats.oosSizes} OOS)`],
-          ["catalog", `Catalog (${(products || []).length})`],
-          ["promos", `Promos (${(promos || []).length})`],
-          ["content", `Content (${(posts || []).length})`],
-          ["reviews", `Reviews (${(reviews || []).length})`],
-          ["customers", `Customers (${(customers || []).length})`],
+          ["overview", `经营速览`],
+          ["orders", `订单 (${toShip.length} 待发货)`],
+          ["inventory", `库存 (${stats.oosSizes} 缺码)`],
+          ["catalog", `商品 (${(products || []).length})`],
+          ["promos", `优惠码 (${(promos || []).length})`],
+          ["content", `内容 (${(posts || []).length})`],
+          ["reviews", `评价 (${(reviews || []).length})`],
+          ["customers", `会员 (${(customers || []).length})`],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -149,7 +159,7 @@ export default function MerchantConsole() {
           style={{ marginLeft: "auto" }}
           onClick={() => { sessionStorage.removeItem(TOKEN_KEY); setToken(null); setData(null); }}
         >
-          Lock
+          锁定
         </button>
       </div>
       {notice && <p style={{ color: "var(--fit)", fontSize: 13, margin: "10px 0" }}>✓ {notice}</p>}
@@ -159,22 +169,22 @@ export default function MerchantConsole() {
       {tab === "overview" && (
         <>
           <div className="baseline-kpis" style={{ gridTemplateColumns: "repeat(4, 1fr)", margin: "20px 0 8px" }}>
-            <div className="stat-box"><div className="num">${stats.gmvUsd.toLocaleString()}</div><div className="lbl">GMV (USD)</div></div>
+            <div className="stat-box"><div className="num">${stats.gmvUsd.toLocaleString()}</div><div className="lbl">成交额 GMV (USD)</div></div>
             <div className="stat-box">
               <div className="num">${(stats.marginUsd ?? 0).toLocaleString()}</div>
-              <div className="lbl">Gross margin (COGS ${ (stats.cogsUsd ?? 0).toLocaleString() })</div>
+              <div className="lbl">毛利（成本 ${ (stats.cogsUsd ?? 0).toLocaleString() }）</div>
             </div>
-            <div className="stat-box"><div className="num">{stats.marginPct ?? 0}%</div><div className="lbl">Margin rate</div></div>
-            <div className="stat-box"><div className="num">{stats.orders}</div><div className="lbl">Orders</div></div>
-            <div className="stat-box"><div className="num" style={{ color: toShip.length ? "#D4880F" : undefined }}>{stats.toShip}</div><div className="lbl">To ship</div></div>
-            <div className="stat-box"><div className="num" style={{ color: "var(--fit)" }}>{stats.shipped}</div><div className="lbl">Shipped</div></div>
-            <div className="stat-box"><div className="num" style={{ color: stats.afterSales ? "#C0392B" : undefined }}>{stats.afterSales}</div><div className="lbl">After-sales (exchange/return)</div></div>
-            <div className="stat-box"><div className="num" style={{ color: stats.oosSizes ? "#D4880F" : "var(--fit)" }}>{stats.oosSizes}</div><div className="lbl">OOS sizes</div></div>
-            <div className="stat-box"><div className="num">{stats.products ?? "—"}{stats.unlisted ? <span className="muted" style={{ fontSize: 13 }}> ({stats.unlisted} off)</span> : null}</div><div className="lbl">Products (listed + off)</div></div>
+            <div className="stat-box"><div className="num">{stats.marginPct ?? 0}%</div><div className="lbl">毛利率</div></div>
+            <div className="stat-box"><div className="num">{stats.orders}</div><div className="lbl">订单数</div></div>
+            <div className="stat-box"><div className="num" style={{ color: toShip.length ? "#D4880F" : undefined }}>{stats.toShip}</div><div className="lbl">待发货</div></div>
+            <div className="stat-box"><div className="num" style={{ color: "var(--fit)" }}>{stats.shipped}</div><div className="lbl">已发货</div></div>
+            <div className="stat-box"><div className="num" style={{ color: stats.afterSales ? "#C0392B" : undefined }}>{stats.afterSales}</div><div className="lbl">售后（换货/退货）</div></div>
+            <div className="stat-box"><div className="num" style={{ color: stats.oosSizes ? "#D4880F" : "var(--fit)" }}>{stats.oosSizes}</div><div className="lbl">缺码尺码数</div></div>
+            <div className="stat-box"><div className="num">{stats.products ?? "—"}{stats.unlisted ? <span className="muted" style={{ fontSize: 13 }}>（{stats.unlisted} 已下架）</span> : null}</div><div className="lbl">商品（在售 + 下架）</div></div>
           </div>
           <p className="muted" style={{ fontSize: 13 }}>GMV 口径：已成交单（不含待支付/支付失败）· 注册用户 {stats.registeredUsers} · 数据 {POLL_MS / 1000}s 自动刷新</p>
 
-          <h3 style={{ margin: "32px 0 12px" }}>Recent orders</h3>
+          <h3 style={{ margin: "32px 0 12px" }}>近期订单</h3>
           <OrderTable orders={orders.slice(0, 8)} busy={busy} onShip={(id) => shipOrder(id)} />
         </>
       )}
@@ -182,7 +192,7 @@ export default function MerchantConsole() {
       {/* ===== Orders ===== */}
       {tab === "orders" && (
         <>
-          <h3 style={{ margin: "28px 0 12px" }}>All orders — paid 行可直接发货（paid → shipped）</h3>
+          <h3 style={{ margin: "28px 0 12px" }}>全部订单 — 已支付行可直接发货（paid → shipped）</h3>
           <OrderTable orders={orders} busy={busy} onShip={(id) => shipOrder(id)} />
         </>
       )}
@@ -190,7 +200,7 @@ export default function MerchantConsole() {
       {/* ===== Inventory ===== */}
       {tab === "inventory" && (
         <>
-          <h3 style={{ margin: "28px 0 12px" }}>Stock matrix — 商品 × 尺码（0 红 · &lt;3 黄）</h3>
+          <h3 style={{ margin: "28px 0 12px" }}>库存矩阵 — 商品 × 尺码（0 红 · &lt;3 黄）</h3>
           {inventory.map((p) => {
             const lowCount = p.sizes.filter((s) => s.stock < 3).length;
             return (
@@ -207,7 +217,7 @@ export default function MerchantConsole() {
                         `${p.name}：${lowCount} 个低库存尺码已补到 6`)
                     }
                   >
-                    {busy === `restock-${p.id}` ? "…" : lowCount ? `Restock low (${lowCount})` : "Stock OK"}
+                    {busy === `restock-${p.id}` ? "…" : lowCount ? `补齐低库存（${lowCount}）` : "库存正常"}
                   </button>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
@@ -237,12 +247,12 @@ export default function MerchantConsole() {
       {tab === "catalog" && (
         <>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "28px 0 12px" }}>
-            <h3 style={{ margin: 0 }}>Catalog — {(products || []).length} products（{stats.unlisted ?? 0} unlisted）</h3>
+            <h3 style={{ margin: 0 }}>商品管理 — 共 {(products || []).length} 个（{stats.unlisted ?? 0} 个已下架）</h3>
             <button
               className="btn btn-sm btn-primary"
               onClick={() => { setEditing(null); setFormOpen(!formOpen); }}
             >
-              {formOpen && !editing ? "Close form" : "+ New product"}
+              {formOpen && !editing ? "收起表单" : "+ 新建商品"}
             </button>
           </div>
 
@@ -268,7 +278,7 @@ export default function MerchantConsole() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginTop: 12 }}>
             <thead>
               <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
-                <th style={{ padding: "6px 0" }}>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Rating</th><th>Status</th><th>Updated</th><th></th>
+                <th style={{ padding: "6px 0" }}>商品</th><th>类目</th><th>售价</th><th>库存</th><th>评分</th><th>状态</th><th>更新</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -292,15 +302,15 @@ export default function MerchantConsole() {
                   <td>${Number(p.price).toFixed(0)}{p.compareAt ? <div className="muted" style={{ fontSize: 11, textDecoration: "line-through" }}>${Number(p.compareAt).toFixed(0)}</div> : null}</td>
                   <td style={{ color: p.stock === 0 ? "#C0392B" : p.oosCount ? "#D4880F" : undefined }}>{p.stock}</td>
                   <td className="muted">{p.rating ? `${p.rating.toFixed(1)} (${p.reviewsCount})` : "—"}</td>
-                  <td style={{ fontWeight: 600, color: p.listed ? "var(--fit)" : "var(--text-sub)" }}>{p.listed ? "listed" : "unlisted"}</td>
-                  <td className="muted" style={{ fontSize: 11 }}>{p.createdAt ? p.createdAt.slice(0, 10) : "seed"}</td>
+                  <td style={{ fontWeight: 600, color: p.listed ? "var(--fit)" : "var(--text-sub)" }}>{p.listed ? "在售" : "已下架"}</td>
+                  <td className="muted" style={{ fontSize: 11 }}>{p.createdAt ? p.createdAt.slice(0, 10) : "种子"}</td>
                   <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                     <button
                       className="btn btn-sm btn-outline"
                       disabled={busy === `prod-${p.id}`}
                       onClick={() => { setEditing(p); setFormOpen(true); window.scrollTo(0, 0); }}
                     >
-                      Edit
+                      编辑
                     </button>{" "}
                     <button
                       className={`btn btn-sm ${p.listed ? "btn-outline" : "btn-primary"}`}
@@ -310,7 +320,7 @@ export default function MerchantConsole() {
                           `${p.name} ${p.listed ? "已下架（前台即刻不可见）" : "已重新上架"}`)
                       }
                     >
-                      {busy === `prod-${p.id}` ? "…" : p.listed ? "Unlist" : "List"}
+                      {busy === `prod-${p.id}` ? "…" : p.listed ? "下架" : "上架"}
                     </button>
                   </td>
                 </tr>
@@ -323,7 +333,7 @@ export default function MerchantConsole() {
       {/* ===== Promos（Phase 19：优惠码运营）===== */}
       {tab === "promos" && (
         <>
-          <h3 style={{ margin: "28px 0 12px" }}>Promo codes — 结算页验签计价，订单落码可对账</h3>
+          <h3 style={{ margin: "28px 0 12px" }}>优惠码 — 结算页验签计价，订单落码可对账</h3>
           <form
             className="product-card"
             style={{ padding: 18, marginBottom: 16, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" }}
@@ -337,25 +347,25 @@ export default function MerchantConsole() {
               }, "promo-save", `优惠码 ${String(f.code.value).toUpperCase()} 已创建`);
             }}
           >
-            <div><label>Code</label><input name="code" placeholder="WELCOME10" required /></div>
-            <div><label>Type</label>
+            <div><label>优惠码</label><input name="code" placeholder="WELCOME10" required /></div>
+            <div><label>类型</label>
               <select name="type" defaultValue="percent">
-                <option value="percent">percent (%)</option>
-                <option value="fixed">fixed ($)</option>
+                <option value="percent">百分比 (%)</option>
+                <option value="fixed">固定金额 ($)</option>
               </select>
             </div>
-            <div><label>Value</label><input name="value" type="number" step="0.01" min="0.01" placeholder="10" required /></div>
-            <div><label>Min spend ($)</label><input name="minSpend" type="number" step="0.01" min="0" placeholder="0" /></div>
-            <div><label>Max uses (0=∞)</label><input name="maxUses" type="number" min="0" placeholder="0" /></div>
+            <div><label>面额</label><input name="value" type="number" step="0.01" min="0.01" placeholder="10" required /></div>
+            <div><label>最低消费 ($)</label><input name="minSpend" type="number" step="0.01" min="0" placeholder="0" /></div>
+            <div><label>次数上限（0=不限）</label><input name="maxUses" type="number" min="0" placeholder="0" /></div>
             <button className="btn btn-sm btn-primary" type="submit" disabled={busy === "promo-save"}>
-              {busy === "promo-save" ? "…" : "Create promo"}
+              {busy === "promo-save" ? "…" : "创建优惠码"}
             </button>
           </form>
 
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
-                <th style={{ padding: "6px 0" }}>Code</th><th>Type</th><th>Value</th><th>Min spend</th><th>Uses</th><th>Status</th><th></th>
+                <th style={{ padding: "6px 0" }}>优惠码</th><th>类型</th><th>面额</th><th>门槛</th><th>已用/上限</th><th>状态</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -366,7 +376,7 @@ export default function MerchantConsole() {
                   <td>{p.type === "percent" ? `${p.value}%` : `$${p.value}`}</td>
                   <td className="muted">{p.minSpend ? `$${p.minSpend}` : "—"}</td>
                   <td className="muted">{p.usedCount}{p.maxUses ? ` / ${p.maxUses}` : ""}</td>
-                  <td style={{ fontWeight: 600, color: p.active ? "var(--fit)" : "var(--text-sub)" }}>{p.active ? "active" : "disabled"}</td>
+                  <td style={{ fontWeight: 600, color: p.active ? "var(--fit)" : "var(--text-sub)" }}>{p.active ? "启用中" : "已停用"}</td>
                   <td style={{ textAlign: "right" }}>
                     <button
                       className={`btn btn-sm ${p.active ? "btn-outline" : "btn-primary"}`}
@@ -376,7 +386,7 @@ export default function MerchantConsole() {
                           `${p.code} ${p.active ? "已停用" : "已启用"}`)
                       }
                     >
-                      {busy === `promo-${p.code}` ? "…" : p.active ? "Disable" : "Enable"}
+                      {busy === `promo-${p.code}` ? "…" : p.active ? "停用" : "启用"}
                     </button>
                   </td>
                 </tr>
@@ -432,18 +442,18 @@ export default function MerchantConsole() {
             }}
           >
             <div style={{ flex: "3 1 280px" }}>
-              <label>AI draft — topic / long-tail keyword</label>
+              <label>AI 草稿 — 主题 / 长尾关键词</label>
               <input name="topic" placeholder="how to clean suede shoes" required />
             </div>
             <div style={{ flex: "1 1 180px" }}>
-              <label>Focus product (optional)</label>
+              <label>聚焦商品（可选）</label>
               <select name="productId" defaultValue="">
-                <option value="">Auto-match</option>
+                <option value="">自动匹配</option>
                 {(products || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <button className="btn btn-sm btn-primary" type="submit" disabled={genBusy}>
-              {genBusy ? "Generating…" : "Generate draft"}
+              {genBusy ? "生成中…" : "生成草稿"}
             </button>
             <p className="muted" style={{ width: "100%", margin: 0, fontSize: 11 }}>
               人审铁律：生成结果只回填下方表单，审校/改写后才发布（内容质量挂钩退货率与站点 E-E-A-T）。未配 LLM_API_KEY 时走模板兜底。
@@ -465,20 +475,20 @@ export default function MerchantConsole() {
             }}
           >
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ flex: "2 1 240px" }}><label>Title</label><input name="title" placeholder="How to measure your feet at home" required /></div>
-              <div style={{ flex: "1 1 180px" }}><label>Tags (comma sep)</label><input name="tags" placeholder="fit guide, wide feet" /></div>
+              <div style={{ flex: "2 1 240px" }}><label>标题</label><input name="title" placeholder="How to measure your feet at home" required /></div>
+              <div style={{ flex: "1 1 180px" }}><label>标签（逗号分隔）</label><input name="tags" placeholder="fit guide, wide feet" /></div>
             </div>
-            <div><label>Excerpt (≤200 chars, meta description)</label><input name="excerpt" placeholder="Optional — auto-generated from body if empty" /></div>
-            <div><label>Cover image URL</label><input name="cover" placeholder="https://…" /></div>
-            <div><label>Body (blank line = new paragraph)</label><textarea name="body" rows={5} placeholder="Write the guide…" required style={{ width: "100%", fontFamily: "inherit" }} /></div>
+            <div><label>摘要（≤200 字，作 meta description）</label><input name="excerpt" placeholder="留空则自动截取正文" /></div>
+            <div><label>封面图 URL</label><input name="cover" placeholder="https://…" /></div>
+            <div><label>正文（空行分段）</label><textarea name="body" rows={5} placeholder="写下这篇指南…" required style={{ width: "100%", fontFamily: "inherit" }} /></div>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               {genSource && (
                 <span className="chip" style={{ fontSize: 11, padding: "3px 10px", background: "var(--fit)", color: "#fff", border: "none" }}>
-                  {genSource === "llm" ? "AI draft · 审校后发布" : "模板草稿 · 可再生成"}
+                  {genSource === "llm" ? "AI 草稿 · 审校后发布" : "模板草稿 · 可再生成"}
                 </span>
               )}
               <button className="btn btn-sm btn-primary" type="submit" disabled={busy === "post-save"}>
-                {busy === "post-save" ? "…" : "Publish article"}
+                {busy === "post-save" ? "…" : "发布文章"}
               </button>
             </div>
           </form>
@@ -486,7 +496,7 @@ export default function MerchantConsole() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
-                <th style={{ padding: "6px 0" }}>Article</th><th>Tags</th><th>Words</th><th>Status</th><th>Updated</th><th></th>
+                <th style={{ padding: "6px 0" }}>文章</th><th>标签</th><th>字数</th><th>状态</th><th>更新时间</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -498,7 +508,7 @@ export default function MerchantConsole() {
                   </td>
                   <td className="muted">{(p.tags || []).join(", ") || "—"}</td>
                   <td className="muted">{p.wordCount}</td>
-                  <td style={{ fontWeight: 600, color: p.published ? "var(--fit)" : "var(--text-sub)" }}>{p.published ? "live" : "offline"}</td>
+                  <td style={{ fontWeight: 600, color: p.published ? "var(--fit)" : "var(--text-sub)" }}>{p.published ? "已上线" : "已下线"}</td>
                   <td className="muted" style={{ fontSize: 11 }}>{fmtTime(p.updatedAt)}</td>
                   <td style={{ textAlign: "right" }}>
                     <button
@@ -509,7 +519,7 @@ export default function MerchantConsole() {
                           `《${p.title}》${p.published ? "已下线（退出前台与 sitemap）" : "已上线"}`)
                       }
                     >
-                      {busy === `post-${p.slug}` ? "…" : p.published ? "Unpublish" : "Publish"}
+                      {busy === `post-${p.slug}` ? "…" : p.published ? "下线" : "上线"}
                     </button>
                   </td>
                 </tr>
@@ -524,15 +534,15 @@ export default function MerchantConsole() {
       {/* ===== Reviews（评价审核）===== */}
       {tab === "reviews" && (
         <>
-          <h3 style={{ margin: "28px 0 4px" }}>Reviews — 已购验证 UGC（删除即回写商品评分聚合）</h3>
+          <h3 style={{ margin: "28px 0 4px" }}>评价管理 — 已购验证 UGC（删除即回写商品评分聚合）</h3>
           <p className="muted" style={{ fontSize: 12, margin: "0 0 14px" }}>
-            全部评价均过已购验证（NOT_PURCHASED 拦截在先）；Delete 用于违规内容审核，评分/fitStats 聚合即刻重算。
+            全部评价均过已购验证（未购提交在源头拦截）；删除用于违规内容审核，评分/合脚统计即刻重算。
           </p>
           {(reviews || []).length ? (
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
-                  <th style={{ padding: "6px 0" }}>Review</th><th>Product</th><th>Rating</th><th>Fit</th><th>Author</th><th>Date</th><th></th>
+                  <th style={{ padding: "6px 0" }}>评价内容</th><th>商品</th><th>评分</th><th>合脚度</th><th>作者</th><th>时间</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -548,7 +558,7 @@ export default function MerchantConsole() {
                     <td style={{ color: r.rating >= 4 ? "var(--fit)" : r.rating <= 2 ? "#C0392B" : "#D4880F", fontWeight: 700 }}>
                       {"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}
                     </td>
-                    <td className="muted">{r.fit ? r.fit.replace(/_/g, " ") : "—"}</td>
+                    <td className="muted">{r.fit === "too_small" ? "偏小" : r.fit === "too_large" ? "偏大" : r.fit === "true_to_size" ? "正码" : "—"}</td>
                     <td className="muted">{r.author}{r.verified ? <span title="已购验证" style={{ color: "var(--fit)" }}> ●</span> : null}</td>
                     <td className="muted" style={{ fontSize: 11 }}>{fmtTime(r.createdAt)}</td>
                     <td style={{ textAlign: "right" }}>
@@ -561,7 +571,7 @@ export default function MerchantConsole() {
                             `评价已删除（${r.productName} 评分聚合已重算）`)
                         }
                       >
-                        {busy === `rev-${r.id}` ? "…" : "Delete"}
+                        {busy === `rev-${r.id}` ? "…" : "删除"}
                       </button>
                     </td>
                   </tr>
@@ -577,15 +587,15 @@ export default function MerchantConsole() {
       {/* ===== Customers（会员名册 · CRM）===== */}
       {tab === "customers" && (
         <>
-          <h3 style={{ margin: "28px 0 4px" }}>Customers — 会员名册（等级按累计实付派生 · 不可手改）</h3>
+          <h3 style={{ margin: "28px 0 4px" }}>会员名册 — 等级按累计实付派生（不可手改）</h3>
           <p className="muted" style={{ fontSize: 12, margin: "0 0 14px" }}>
-            Member $0 · Silver $300（1.5×积分）· Gold $800（2×）。手动调积分用于客诉补偿/活动奖励 —— 全程埋点可审计。
+            Member $0 · Silver $300（1.5× 积分）· Gold $800（2×）。手动调积分用于客诉补偿/活动奖励 —— 全程埋点可审计。
           </p>
           {(customers || []).length ? (
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
-                  <th style={{ padding: "6px 0" }}>Customer</th><th>Tier</th><th>Points</th><th>Lifetime spend</th><th>Orders</th><th>Joined</th><th>Adjust points</th>
+                  <th style={{ padding: "6px 0" }}>会员</th><th>等级</th><th>积分</th><th>累计消费</th><th>订单</th><th>注册时间</th><th>积分调整</th>
                 </tr>
               </thead>
               <tbody>
@@ -602,6 +612,7 @@ export default function MerchantConsole() {
                     <td className="muted">${c.lifetimeSpend.toLocaleString()}</td>
                     <td className="muted">{c.orders}{c.lastOrderAt ? <div style={{ fontSize: 11 }}>{fmtTime(c.lastOrderAt).slice(0, 10)}</div> : null}</td>
                     <td className="muted" style={{ fontSize: 11 }}>{c.joinedAt.slice(0, 10)}</td>
+
                     <td>
                       <form
                         style={{ display: "flex", gap: 6, alignItems: "center" }}
@@ -620,7 +631,7 @@ export default function MerchantConsole() {
                           disabled={busy === `pts-${c.id}`}
                         />
                         <button className="btn btn-sm btn-outline" type="submit" disabled={busy === `pts-${c.id}`}>
-                          {busy === `pts-${c.id}` ? "…" : "Apply"}
+                          {busy === `pts-${c.id}` ? "…" : "调整"}
                         </button>
                       </form>
                     </td>
@@ -647,7 +658,7 @@ function OrderTable({ orders, busy, onShip }) {
     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
       <thead>
         <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
-          <th style={{ padding: "6px 0" }}>Order</th><th>Placed</th><th>Buyer</th><th>Region</th><th>Items</th><th>Total</th><th>Status</th><th></th>
+          <th style={{ padding: "6px 0" }}>订单号</th><th>下单时间</th><th>买家</th><th>地区</th><th>商品</th><th>金额</th><th>状态</th><th></th>
         </tr>
       </thead>
       <tbody>
@@ -664,13 +675,13 @@ function OrderTable({ orders, busy, onShip }) {
             </td>
             <td>{o.currency} {Number(o.total ?? 0).toFixed(2)}</td>
             <td style={{ color: STATUS_COLOR[o.status] || undefined, fontWeight: 600 }}>
-              {o.status.replace(/_/g, " ")}
+              {ORDER_STATUS_ZH[o.status] || o.status.replace(/_/g, " ")}
               {o.status === "shipped" && <div className="muted" style={{ fontSize: 11, fontWeight: 400 }}>{fmtTime(o.shippedAt)}</div>}
             </td>
             <td style={{ textAlign: "right" }}>
               {o.status === "paid" ? (
                 <button className="btn btn-sm btn-primary" disabled={busy === `ship-${o.id}`} onClick={() => onShip(o.id)}>
-                  {busy === `ship-${o.id}` ? "…" : "Mark shipped"}
+                  {busy === `ship-${o.id}` ? "…" : "标记发货"}
                 </button>
               ) : (
                 <span className="muted mono" style={{ fontSize: 11 }}>{o.tracking}</span>
@@ -713,29 +724,29 @@ function ProductForm({ initial, busy, onSubmit, onCancel }) {
   const val = (k) => (initial ? (Array.isArray(initial[k]) ? initial[k].join(", ") : initial[k] ?? "") : "");
   return (
     <form className="product-card" style={{ padding: 20, marginBottom: 16 }} onSubmit={submit}>
-      <b>{isEdit ? `Edit — ${initial.name}` : "New product"}</b>
+      <b>{isEdit ? `编辑商品 — ${initial.name}` : "新建商品"}</b>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginTop: 12 }}>
-        <div><label>Name *</label><input name="name" defaultValue={val("name")} required /></div>
-        <div><label>Category *</label><input name="category" defaultValue={val("category")} placeholder="Loafers / Sneakers / Boots…" required /></div>
-        <div><label>Price (USD) *</label><input name="price" type="number" step="0.01" min="1" defaultValue={initial ? initial.price : ""} required /></div>
-        <div><label>Compare-at (USD)</label><input name="compareAt" type="number" step="0.01" min="0" defaultValue={initial ? initial.compareAt ?? "" : ""} placeholder="划线价（可空）" /></div>
-        <div><label>Heel</label><input name="heel" defaultValue={val("heel") || "Flat"} /></div>
-        <div><label>Widths（逗号分隔）</label><input name="widths" defaultValue={val("widths") || "Standard"} placeholder="Standard, Wide" /></div>
-        <div><label>Last（楦型）*</label>
+        <div><label>名称 *</label><input name="name" defaultValue={val("name")} required /></div>
+        <div><label>类目 *</label><input name="category" defaultValue={val("category")} placeholder="Loafers / Sneakers / Boots…" required /></div>
+        <div><label>售价 (USD) *</label><input name="price" type="number" step="0.01" min="1" defaultValue={initial ? initial.price : ""} required /></div>
+        <div><label>划线价 (USD)</label><input name="compareAt" type="number" step="0.01" min="0" defaultValue={initial ? initial.compareAt ?? "" : ""} placeholder="可空" /></div>
+        <div><label>跟高</label><input name="heel" defaultValue={val("heel") || "Flat"} /></div>
+        <div><label>宽窄（逗号分隔）</label><input name="widths" defaultValue={val("widths") || "Standard"} placeholder="Standard, Wide" /></div>
+        <div><label>楦型 *</label>
           <select name="lastCode" defaultValue={val("lastCode")} required disabled={isEdit} title={isEdit ? "楦型建档后不可改（尺码引擎依赖）" : ""}>
             {LAST_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         {!isEdit && (
-          <div><label>Sizes（逗号分隔）*</label><input name="sizes" placeholder="36, 37, 38, 39, 40" required /></div>
+          <div><label>尺码（逗号分隔）*</label><input name="sizes" placeholder="36, 37, 38, 39, 40" required /></div>
         )}
-        <div style={{ gridColumn: "1 / -1" }}><label>Image URL</label><input name="image" defaultValue={val("image")} placeholder="https://…" /></div>
-        <div style={{ gridColumn: "1 / -1" }}><label>Description</label><input name="desc" defaultValue={val("desc")} /></div>
-        <div style={{ gridColumn: "1 / -1" }}><label>Features（逗号分隔）</label><input name="features" defaultValue={val("features")} /></div>
+        <div style={{ gridColumn: "1 / -1" }}><label>商品图 URL</label><input name="image" defaultValue={val("image")} placeholder="https://…" /></div>
+        <div style={{ gridColumn: "1 / -1" }}><label>描述</label><input name="desc" defaultValue={val("desc")} /></div>
+        <div style={{ gridColumn: "1 / -1" }}><label>卖点（逗号分隔）</label><input name="features" defaultValue={val("features")} /></div>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-        <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "Saving…" : isEdit ? "Save changes" : "Create product"}</button>
-        <button className="btn btn-outline" type="button" onClick={onCancel}>Cancel</button>
+        <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "保存中…" : isEdit ? "保存修改" : "创建商品"}</button>
+        <button className="btn btn-outline" type="button" onClick={onCancel}>取消</button>
       </div>
     </form>
   );

@@ -1,12 +1,17 @@
 import "./globals.css";
+import { cookies } from "next/headers";
 import StylistChat from "@/components/StylistChat";
 import CartBadge from "@/components/CartBadge";
 import CurrencySwitcher from "@/components/CurrencySwitcher";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import CookieConsent from "@/components/CookieConsent";
 import WebVitalsReporter from "@/components/WebVitalsReporter";
+import { getThemeFromCookies, themeCss } from "@/lib/themes";
+import { getLangFromCookies } from "@/lib/i18n";
 
 /**
- * 跨境 SEO：hreflang 需在多语言上线时按 locale 展开（方案文档 §6.2）
+ * 跨境 SEO：hreflang 需在多语言上线时按 locale 展开（方案文档 §6.2）。
+ * 主题（10 套 UI 模板）与语言同款 cookie 偏好 —— SSR 注入 :root 变量覆盖。
  */
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://solfit.example"),
@@ -16,9 +21,15 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const jar = cookies();
+  const theme = getThemeFromCookies(jar);
+  const css = themeCss(theme);
+  const lang = getLangFromCookies(jar);
+
   return (
-    <html lang="en">
+    <html lang={lang}>
       <body>
+        {css ? <style dangerouslySetInnerHTML={{ __html: css }} /> : null}
         <div className="announce">Free size exchanges on every order — the SOLFIT Fit Guarantee</div>
         <header className="site-header">
           <div className="header-inner">
@@ -30,6 +41,7 @@ export default function RootLayout({ children }) {
               <a href="/blog">Journal</a>
             </nav>
             <div className="header-actions">
+              <LanguageSwitcher />
               <CurrencySwitcher />
               <a href="/account" aria-label="My account" style={{ fontSize: 14, fontWeight: 600, marginLeft: 8 }}>
                 Account

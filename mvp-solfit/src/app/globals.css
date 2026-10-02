@@ -32,7 +32,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.
 
 /* header / footer */
 .announce { background: var(--ink); color: #EDE6DA; text-align: center; font-size: 12px; letter-spacing: 0.06em; padding: 8px 16px; }
-.site-header { position: sticky; top: 0; z-index: 60; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+.site-header { position: sticky; top: 0; z-index: 60; background: var(--surface); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
 .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 24px; }
 .logo { font-family: var(--font-display); font-size: 21px; letter-spacing: 0.18em; }
 .logo em { color: var(--accent); font-style: normal; }

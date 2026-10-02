@@ -5,7 +5,7 @@
 
 import { baselineSnapshot } from "@/lib/analytics";
 
-export const metadata = { title: "Baseline dashboard" };
+export const metadata = { title: "基线看板" };
 export const dynamic = "force-dynamic";
 
 export default function BaselinePage() {
@@ -14,20 +14,20 @@ export default function BaselinePage() {
 
   return (
     <div className="container" style={{ padding: "48px 24px 96px" }}>
-      <div className="eyebrow">Phase 1 milestone</div>
-      <h1 style={{ fontSize: 36, marginBottom: 8 }}>Conversion &amp; return baseline</h1>
+      <div className="eyebrow">Phase 1 里程碑</div>
+      <h1 style={{ fontSize: 36, marginBottom: 8 }}>转化率与退货率基线</h1>
       <p className="muted" style={{ marginBottom: 32 }}>{note}</p>
 
       <div className="baseline-kpis">
-        <div className="stat-box"><div className="num">{rates.viewToCart}%</div><div className="lbl">View → Cart</div></div>
-        <div className="stat-box"><div className="num">{rates.cartToOrder}%</div><div className="lbl">Cart → Order</div></div>
-        <div className="stat-box"><div className="num">{rates.checkoutToOrder}%</div><div className="lbl">Checkout → Order</div></div>
-        <div className="stat-box"><div className="num">{kpis.returnRate}%</div><div className="lbl">Return rate (target &lt;12%)</div></div>
-        <div className="stat-box"><div className="num">{kpis.aiCoverage}%</div><div className="lbl">AI size coverage</div></div>
-        <div className="stat-box"><div className="num">{kpis.ordersTotal}</div><div className="lbl">Orders (GMV ${Math.round(kpis.gmvUsd)})</div></div>
+        <div className="stat-box"><div className="num">{rates.viewToCart}%</div><div className="lbl">浏览 → 加购</div></div>
+        <div className="stat-box"><div className="num">{rates.cartToOrder}%</div><div className="lbl">加购 → 下单</div></div>
+        <div className="stat-box"><div className="num">{rates.checkoutToOrder}%</div><div className="lbl">结算 → 下单</div></div>
+        <div className="stat-box"><div className="num">{kpis.returnRate}%</div><div className="lbl">退货率（目标 &lt;12%）</div></div>
+        <div className="stat-box"><div className="num">{kpis.aiCoverage}%</div><div className="lbl">AI 尺码推荐覆盖率</div></div>
+        <div className="stat-box"><div className="num">{kpis.ordersTotal}</div><div className="lbl">订单数（GMV ${Math.round(kpis.gmvUsd)}）</div></div>
       </div>
 
-      <h3 style={{ margin: "36px 0 16px" }}>Funnel</h3>
+      <h3 style={{ margin: "36px 0 16px" }}>转化漏斗</h3>
       {funnel.map((f) => (
         <div key={f.step} style={{ marginBottom: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
