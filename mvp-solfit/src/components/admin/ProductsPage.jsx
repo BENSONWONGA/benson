@@ -6,6 +6,7 @@
 
 import { useMemo, useState } from "react";
 import { useAdmin, useOverview, act, Card, Badge, Empty, Pills, Modal, usd } from "@/components/admin/ui";
+import ImageUpload, { GalleryUpload } from "@/components/admin/ImageUpload";
 
 const LAST_CODES = ["W1", "W2", "W3", "W4", "H1", "H2", "B1", "F1", "F2"];
 
@@ -48,6 +49,7 @@ export default function ProductsPage() {
       setBusy(null);
     }
   }
+
 
   async function toggleListed(p) {
     setBusy(`prod-${p.id}`);
@@ -143,8 +145,9 @@ export default function ProductsPage() {
         )}
       </Card>
 
-      {/* ===== 新建/编辑弹窗 ===== */}
+      {/* ===== 新建/编辑弹窗（key 强制随编辑对象重建 —— 上传组件状态不串商品）===== */}
       <ProductModal
+        key={editing ? `edit-${editing.id}` : "new"}
         open={formOpen}
         product={editing}
         busy={busy === "prod-save"}
@@ -158,6 +161,9 @@ export default function ProductsPage() {
 function ProductModal({ open, product, busy, onClose, onSubmit }) {
   const isEdit = !!product;
   const v = (k) => (product ? (Array.isArray(product[k]) ? product[k].join(", ") : product[k] ?? "") : "");
+  // 图片走受控上传组件（本地上传/外链二选一），key 已保证切换商品时重建
+  const [imgUrl, setImgUrl] = useState(product?.image || "");
+  const [gallery, setGallery] = useState(product?.images || []);
 
   function submit(e) {
     e.preventDefault();
@@ -169,7 +175,8 @@ function ProductModal({ open, product, busy, onClose, onSubmit }) {
       compareAt: f.compareAt.value ? Number(f.compareAt.value) : null,
       heel: f.heel.value,
       widths: f.widths.value,
-      image: f.image.value,
+      image: imgUrl,
+      images: gallery,
       desc: f.desc.value,
       features: f.features.value,
       lastCode: f.lastCode.value,
@@ -178,7 +185,7 @@ function ProductModal({ open, product, busy, onClose, onSubmit }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? `编辑商品 — ${product.name}` : "新建商品"} width={720}>
+    <Modal open={open} onClose={onClose} title={isEdit ? `编辑商品 — ${product.name}` : "新建商品"} width={760}>
       <form onSubmit={submit}>
         <div className="adm-form-grid">
           <div><label>名称 *</label><input name="name" defaultValue={v("name")} required /></div>
@@ -195,9 +202,18 @@ function ProductModal({ open, product, busy, onClose, onSubmit }) {
           </div>
           {!isEdit && <div><label>尺码（逗号分隔）*</label><input name="sizes" placeholder="36, 37, 38, 39, 40" required /></div>}
         </div>
-        <div style={{ marginTop: 12 }}>
-          <label>商品图 URL</label><input name="image" defaultValue={v("image")} placeholder="https://…" />
+
+        {/* ===== 主图 + 详图（本地上传 / 外链皆可）===== */}
+        <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <ImageUpload
+            label="商品主图"
+            value={imgUrl}
+            onChange={setImgUrl}
+            hint="列表页/购物车/SEO 缩略图用它；建议 1:1 方图，≤5MB（png/jpg/webp/gif）"
+          />
+          <GalleryUpload label="商品详图" value={gallery} onChange={setGallery} max={8} />
         </div>
+
         <div style={{ marginTop: 12 }}>
           <label>描述（商品页 SEO meta 的素材）</label><input name="desc" defaultValue={v("desc")} />
         </div>

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { THEMES } from "@/lib/themes";
 import { HOME_TEXT } from "@/lib/i18n";
 import { useAdmin, act, Card, Badge, Empty } from "@/components/admin/ui";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 export default function BrandingPage() {
   const { token } = useAdmin();
@@ -104,12 +105,12 @@ export default function BrandingPage() {
       {/* ===== 首页装修 ===== */}
       <Card title="首页装修" small="主图与 Hero 区文案（中/英双语，留空 = 用默认，清空即回落）">
         <div style={{ marginBottom: 14 }}>
-          <label>首页主图 URL（3:4 竖图为佳）</label>
-          <input value={hp.heroImage} placeholder="https://…（留空 = 内置默认图）" onChange={(e) => setHp({ ...hp, heroImage: e.target.value })} />
-          {hp.heroImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={hp.heroImage} alt="" style={{ width: 110, borderRadius: 8, marginTop: 8, border: "1px solid #e5e8f0" }} />
-          ) : null}
+          <ImageUpload
+            label="首页主图"
+            value={hp.heroImage}
+            onChange={(url) => setHp({ ...hp, heroImage: url })}
+            hint="3:4 竖图为佳；可本地上传或粘贴外链，留空 = 内置默认图"
+          />
         </div>
         {[["zh", "中文文案"], ["en", "English 文案"]].map(([lang, label]) => (
           <div key={lang} style={{ border: "1px solid #e5e8f0", borderRadius: 10, padding: 14, marginBottom: 12 }}>

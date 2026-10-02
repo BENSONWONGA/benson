@@ -84,6 +84,11 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.
 /* PDP */
 .pdp { max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: start; }
 .pdp-main-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: var(--r-lg); border: 1px solid var(--border); background: linear-gradient(160deg, #EFE7D9, #F7F1E6); }
+/* 详图画廊（主图 + 缩略图切换；无详图时不渲染） */
+.pdp-thumbs { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.pdp-thumb { width: 64px; height: 64px; padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden; cursor: pointer; background: var(--surface); transition: border-color 0.12s; }
+.pdp-thumb.active { border-color: var(--ink); }
+.pdp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pdp h1 { font-size: 32px; margin: 8px 0; }
 .fit-strip { background: var(--fit-soft); border: 1px solid #CFE0D2; border-radius: var(--r-md); padding: 12px 14px; margin: 18px 0; color: var(--fit-text); font-size: 13px; }
 .option-label { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: var(--text-sub); margin: 18px 0 8px; }

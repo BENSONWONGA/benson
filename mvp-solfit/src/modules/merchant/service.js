@@ -186,6 +186,7 @@ export function adminListProducts() {
       price: p.price,
       compareAt: p.compareAt,
       image: p.image,
+      images: p.images || [], // 详图画廊（Phase 23 上传/外链）
       desc: p.desc,
       features: p.features,
       badge: p.badge,

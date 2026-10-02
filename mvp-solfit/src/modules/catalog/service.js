@@ -114,6 +114,7 @@ export function createProduct(payload = {}) {
     desc: String(payload.desc || "").trim().slice(0, 600),
     features: parseList(payload.features).slice(0, 8),
     image: String(payload.image || "").trim(),
+    images: parseList(payload.images).slice(0, 8), // 详图画廊（Phase 23 本地上传/外链皆可）
     listed: true,
     createdAt: new Date().toISOString(),
   };
@@ -143,6 +144,7 @@ export function updateProduct(id, patch = {}) {
   if (patch.desc !== undefined) next.desc = String(patch.desc).trim().slice(0, 600);
   if (patch.features !== undefined) next.features = parseList(patch.features).slice(0, 8);
   if (patch.image !== undefined) next.image = String(patch.image).trim();
+  if (patch.images !== undefined) next.images = parseList(patch.images).slice(0, 8);
   if (patch.badge !== undefined) next.badge = patch.badge ? String(patch.badge).trim().slice(0, 24) : null;
   if (patch.widths !== undefined) {
     const widths = parseList(patch.widths);

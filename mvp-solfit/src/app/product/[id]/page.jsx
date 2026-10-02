@@ -12,6 +12,7 @@ import { getCurrencyFromCookies, formatMoney } from "@/lib/currency";
 import { listReviews, reviewSummary, reviewStatus } from "@/modules/reviews/service";
 import ProductCard from "@/components/ProductCard";
 import ProductClient from "@/components/ProductClient";
+import ProductGallery from "@/components/ProductGallery";
 import ReviewForm from "@/components/ReviewForm";
 
 export async function generateMetadata({ params }) {
@@ -26,13 +27,13 @@ export async function generateMetadata({ params }) {
   };
 }
 
-/** 结构化数据 —— 独立站 SEO 命脉（Google Merchant / 富摘要） */
+/** 结构化数据 —— 独立站 SEO 命脉（Google Merchant / 富摘要；主图+详图全量给搜索引擎） */
 function productJsonLd(product) {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    image: product.image,
+    image: [product.image, ...(product.images || [])].filter(Boolean),
     description: product.desc,
     brand: { "@type": "Brand", name: "SOLFIT" },
     offers: {
@@ -71,7 +72,7 @@ export default async function ProductPage({ params }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product)) }} />
       <div className="pdp">
         <div>
-          <img className="pdp-main-img" src={product.image} alt={product.name} />
+          <ProductGallery main={product.image} images={product.images || []} alt={product.name} />
         </div>
         <div>
           {product.badge ? <span className="badge">{product.badge}</span> : null}{" "}
