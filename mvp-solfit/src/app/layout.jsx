@@ -9,6 +9,7 @@ import WebVitalsReporter from "@/components/WebVitalsReporter";
 import { getThemeFromCookies, themeCss } from "@/lib/themes";
 import { getLangFromCookies } from "@/lib/i18n";
 import { getSiteSettings } from "@/lib/site-settings";
+import SiteChrome from "@/components/SiteChrome";
 
 /**
  * 跨境 SEO：hreflang 需在多语言上线时按 locale 展开（方案文档 §6.2）。
@@ -28,17 +29,15 @@ export default function RootLayout({ children }) {
   const lang = getLangFromCookies(jar);
   const settings = getSiteSettings(); // 总后台站点设置（公告栏 / 维护模式）
 
-  return (
-    <html lang={lang}>
-      <body>
-        {css ? <style dangerouslySetInnerHTML={{ __html: css }} /> : null}
-        {settings.maintenance ? (
-          <div style={{ background: "#C0392B", color: "#fff", textAlign: "center", fontSize: 12, letterSpacing: "0.06em", padding: "8px 16px" }}>
-            站点维护中 —— 暂停下单，浏览不受影响
-          </div>
-        ) : null}
-        {settings.announcement ? <div className="announce">{settings.announcement}</div> : null}
-        <header className="site-header">
+  const top = (
+    <>
+      {settings.maintenance ? (
+        <div style={{ background: "#C0392B", color: "#fff", textAlign: "center", fontSize: 12, letterSpacing: "0.06em", padding: "8px 16px" }}>
+          站点维护中 —— 暂停下单，浏览不受影响
+        </div>
+      ) : null}
+      {settings.announcement ? <div className="announce">{settings.announcement}</div> : null}
+      <header className="site-header">
           <div className="header-inner">
             <a className="logo" href="/">SOL<em>FIT</em></a>
             <nav className="main-nav">
@@ -56,9 +55,12 @@ export default function RootLayout({ children }) {
               <a href="/cart" aria-label="Open cart" style={{ marginLeft: 8 }}><CartBadge /></a>
             </div>
           </div>
-        </header>
-        <main>{children}</main>
-        <footer className="site-footer">
+      </header>
+    </>
+  );
+  const bottom = (
+    <>
+      <footer className="site-footer">
           <div className="footer-inner">
             <div>
               <div className="logo" style={{ color: "#F4EFE6" }}>SOL<em>FIT</em></div>
@@ -86,6 +88,16 @@ export default function RootLayout({ children }) {
         </footer>
         <StylistChat />
         <CookieConsent />
+    </>
+  );
+
+  return (
+    <html lang={lang}>
+      <body>
+        {css ? <style dangerouslySetInnerHTML={{ __html: css }} /> : null}
+        <SiteChrome top={top} bottom={bottom}>
+          <main>{children}</main>
+        </SiteChrome>
         <WebVitalsReporter />
       </body>
     </html>
