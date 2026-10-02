@@ -54,6 +54,7 @@ export default function RootLayout({ children }) {
             </div>
             <div>
               <p style={{ fontWeight: 700, marginBottom: 8 }}>Operations</p>
+              <p><a href="/admin/merchant">Merchant console</a></p>
               <p><a href="/admin/baseline">Baseline dashboard</a></p>
               <p><a href="/admin/monitoring">Monitoring dashboard</a></p>
               <p><a href="/privacy">Privacy &amp; data</a></p>
