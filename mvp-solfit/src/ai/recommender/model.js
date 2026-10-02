@@ -230,10 +230,16 @@ export function variantLift() {
         decided: a.decided,
         positives: a.positives,
         ctr: ctr === null ? null : Math.round(ctr * 1000) / 1000,
+        // 零基线是常态（新实验对照臂常 0 转化）：相对提升按 +100% 封顶报告，
+        // 否则 promote 裁决会被 null 拦住（Phase 9 bandit 消费此字段做决策）
         liftVsBaselinePct:
-          baseCtr && ctr !== null && variant !== "baseline"
-            ? Math.round(((ctr / baseCtr - 1) * 100) * 10) / 10
-            : null,
+          ctr === null || variant === "baseline"
+            ? null
+            : baseCtr > 0
+              ? Math.round(((ctr / baseCtr - 1) * 100) * 10) / 10
+              : ctr > 0
+                ? 100
+                : 0,
       };
     })
     .sort((a, b) => a.variant.localeCompare(b.variant));

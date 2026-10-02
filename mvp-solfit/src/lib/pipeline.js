@@ -44,6 +44,9 @@ export const EVENT_SCHEMA = {
   // ===== 广告人群（Phase 8）=====
   // 导出审计：只存平台/人群/规模（邮箱哈希不出域，计数非 PII）
   audience_exported: { platform: "string", segmentId: "string", size: "number" },
+  // ===== 实验治理（Phase 9）=====
+  // 裁决审计：promote/kill/concluded —— 看板与告警取数
+  experiment_decided: { action: "string", variant: "string", liftPct: "number", decided: "number" },
   // ===== 目录与 RUM（Core Web Vitals，客户端 useReportWebVitals）=====
   catalog_list_viewed: { query: "object" },
   product_api_fetched: { productId: "number" },

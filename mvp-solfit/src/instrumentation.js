@@ -20,6 +20,10 @@ export async function register() {
     // 留存摘要投递器（Phase 7：默认 7 天周期；与 recovery 共享单客频控账本）
     const { startRetentionDispatcher } = await import("@/ai/retention");
     startRetentionDispatcher();
+    // 实验治理器（Phase 9：默认 10min 周期跑 ε-greedy 重分配 + 裁决；
+    // bandit.js 依赖图仅 db/metrics/model —— 不经 recommender/index 的 cache/ioredis）
+    const { startExperimentGovernor } = await import("@/ai/recommender/bandit");
+    startExperimentGovernor();
   } catch (err) {
     console.error("[instrumentation] monitor bootstrap failed:", err.message);
   }

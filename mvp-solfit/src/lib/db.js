@@ -26,6 +26,7 @@ const _stores = {
   emailLedger: new Map(),     // sessionId -> {sends[], lastSentAt}（Phase 6 频控账本）
   outbox: [],                // stub Provider 投递件（Phase 6；GDPR erase 清除）
   audienceExports: [],       // 人群导出审计 {platform, segmentId, size, exportedAt}（Phase 8；计数级无 PII）
+  experimentDecisions: [],   // 实验治理决策日志 {action, variant, liftPct, allocation, at}（Phase 9）
 };
 
 export function store(name) {
