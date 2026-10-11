@@ -32,6 +32,7 @@ const NAV = [
     items: [
       ["/admin/merchant/customers", "会员管理", "person"],
       ["/admin/merchant/promos", "优惠码", "tag"],
+      ["/admin/merchant/ai-marketing", "AI 营销", "target"],
       ["/admin/merchant/content", "内容营销", "doc"],
     ],
   },
@@ -62,6 +63,7 @@ const ICONS = {
   shield: <><path d="M12 3l7 3v6c0 4.4-3 7.4-7 9-4-1.6-7-4.6-7-9V6z" /><path d="m9 12 2 2 4-4" /></>,
   pulse: <path d="M3 12h4l2-6 4 12 2-6h6" />,
   gauge: <><path d="M5 19a9 9 0 1 1 14 0" /><path d="m12 13 3.5-3.5" /><circle cx="12" cy="13" r="1.2" /></>,
+  target: <><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" /></>,
 };
 
 function NavIcon({ name, active }) {

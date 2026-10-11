@@ -1,8 +1,11 @@
 /**
  * /admin/baseline — Phase 1 里程碑看板：转化率与退货率基线（方案文档 §9）
  * 骨架期为内存数据；Phase 2 由数仓事件流驱动
+ * 视觉：AdminFrame 液态玻璃框架（与商家后台同一套 .adm-* 皮肤）。
  */
 
+import "../admin.css";
+import AdminFrame from "@/components/admin/AdminFrame";
 import { baselineSnapshot } from "@/lib/analytics";
 
 export const metadata = { title: "基线看板" };
@@ -13,31 +16,35 @@ export default function BaselinePage() {
   const max = Math.max(...funnel.map((f) => f.count), 1);
 
   return (
-    <div className="container" style={{ padding: "48px 24px 96px" }}>
-      <div className="eyebrow">Phase 1 里程碑</div>
-      <h1 style={{ fontSize: 36, marginBottom: 8 }}>转化率与退货率基线</h1>
-      <p className="muted" style={{ marginBottom: 32 }}>{note}</p>
-
-      <div className="baseline-kpis">
-        <div className="stat-box"><div className="num">{rates.viewToCart}%</div><div className="lbl">浏览 → 加购</div></div>
-        <div className="stat-box"><div className="num">{rates.cartToOrder}%</div><div className="lbl">加购 → 下单</div></div>
-        <div className="stat-box"><div className="num">{rates.checkoutToOrder}%</div><div className="lbl">结算 → 下单</div></div>
-        <div className="stat-box"><div className="num">{kpis.returnRate}%</div><div className="lbl">退货率（目标 &lt;12%）</div></div>
-        <div className="stat-box"><div className="num">{kpis.aiCoverage}%</div><div className="lbl">AI 尺码推荐覆盖率</div></div>
-        <div className="stat-box"><div className="num">{kpis.ordersTotal}</div><div className="lbl">订单数（GMV ${Math.round(kpis.gmvUsd)}）</div></div>
+    <AdminFrame eyebrow="Phase 1 里程碑" title="转化率与退货率基线" subtitle={note}>
+      <div className="adm-kpis">
+        <div className="adm-kpi"><div className="adm-kpi-num">{rates.viewToCart}%</div><div className="adm-kpi-lbl">浏览 → 加购</div></div>
+        <div className="adm-kpi"><div className="adm-kpi-num">{rates.cartToOrder}%</div><div className="adm-kpi-lbl">加购 → 下单</div></div>
+        <div className="adm-kpi"><div className="adm-kpi-num">{rates.checkoutToOrder}%</div><div className="adm-kpi-lbl">结算 → 下单</div></div>
+        <div className={`adm-kpi${kpis.returnRate > 12 ? " err" : " ok"}`}>
+          <div className="adm-kpi-num">{kpis.returnRate}%</div>
+          <div className="adm-kpi-lbl">退货率（目标 &lt;12%）</div>
+        </div>
+        <div className="adm-kpi"><div className="adm-kpi-num">{kpis.aiCoverage}%</div><div className="adm-kpi-lbl">AI 尺码推荐覆盖率</div></div>
+        <div className="adm-kpi">
+          <div className="adm-kpi-num">{kpis.ordersTotal}</div>
+          <div className="adm-kpi-lbl">订单数</div>
+          <div className="adm-kpi-sub">GMV ${Math.round(kpis.gmvUsd)}</div>
+        </div>
       </div>
 
-      <h3 style={{ margin: "36px 0 16px" }}>转化漏斗</h3>
-      {funnel.map((f) => (
-        <div key={f.step} style={{ marginBottom: 10 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
-            <span>{f.step}</span><b>{f.count}</b>
+      <div className="adm-card">
+        <div className="adm-card-title">转化漏斗</div>
+        {funnel.map((f) => (
+          <div key={f.step} style={{ marginBottom: 12 }}>
+            <div className="adm-row" style={{ marginBottom: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 700 }}>{f.step}</span>
+              <span className="adm-spacer adm-muted" style={{ fontSize: 12, fontWeight: 700 }}>{f.count}</span>
+            </div>
+            <div className="adm-hbar"><div style={{ width: `${(f.count / max) * 100}%` }} /></div>
           </div>
-          <div style={{ background: "#EFE8DC", borderRadius: 999, height: 8, overflow: "hidden" }}>
-            <div style={{ width: `${(f.count / max) * 100}%`, height: "100%", background: "var(--fit)", borderRadius: 999 }} />
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </AdminFrame>
   );
 }

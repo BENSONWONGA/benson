@@ -5,11 +5,15 @@
  *
  * 与商家后台分层：本台签发的员工令牌（st_ 前缀）供员工在
  * /admin/merchant 登录；吊销即时生效（merchant isAdmin 每请求实时查）。
+ *
+ * 视觉：iOS 26 液态玻璃（admin.css 的 .adm-* 命名空间，由页面外层的
+ * AdminFrame 提供壁纸与令牌；本组件只做展示层，业务逻辑与 fetch 契约不变）。
  */
 
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Card, Kpi, Badge, Empty, Pills } from "@/components/admin/ui";
 
 const TOKEN_KEY = "solfit_master_token";
 const POLL_MS = 10000;
@@ -130,13 +134,16 @@ export default function MasterConsole() {
       .catch(() => {});
   }
 
-  // ===== 未解锁：超管令牌门 =====
+  // ===== 未解锁：超管令牌门（玻璃卡片，同商家后台 Gate 质感）=====
   if (!token) {
     return (
-      <div style={{ maxWidth: 420, margin: "40px auto 0" }}>
-        <p className="eyebrow">总后台</p>
-        <h1 style={{ fontSize: 32, margin: "0 0 20px" }}>老板登录</h1>
-        <form className="finder-form" onSubmit={unlock}>
+      <div className="adm-gate">
+        <form className="adm-gate-card" onSubmit={unlock}>
+          <div className="adm-eyebrow">SOLFIT 总后台</div>
+          <h1>老板登录</h1>
+          <p className="adm-muted" style={{ fontSize: 12, marginBottom: 18 }}>
+            输入超管令牌进入总后台（员工令牌由本台签发，员工请去商家后台登录）
+          </p>
           <label htmlFor="master-token">超管令牌</label>
           <input
             id="master-token"
@@ -145,76 +152,69 @@ export default function MasterConsole() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="x-master-token"
             required
+            autoFocus
           />
-          {error && <p style={{ color: "#C0392B", fontSize: 13, margin: 0 }}>{error}</p>}
-          <button className="btn btn-primary" type="submit" disabled={!input}>
+          {error && <p style={{ color: "var(--adm-err)", fontSize: 12, margin: "8px 0 0" }}>{error}</p>}
+          <button className="adm-btn adm-btn-primary" style={{ width: "100%", marginTop: 18, height: 42 }} type="submit" disabled={!input}>
             进入总后台
           </button>
+          <p className="adm-muted" style={{ fontSize: 11, marginTop: 16, lineHeight: 1.7 }}>
+            骨架期默认令牌 <code>dev-master-token</code>（生产用环境变量 <code>MASTER_TOKEN</code> 覆盖）。
+            员工请用你签发的令牌去 <a href="/admin/merchant">商家后台</a> 登录。
+          </p>
         </form>
-        <p className="muted" style={{ marginTop: 16, fontSize: 13 }}>
-          骨架期默认令牌：<code className="mono">dev-master-token</code>（生产用环境变量 <code className="mono">MASTER_TOKEN</code> 覆盖）。
-          员工请用你签发的令牌去 <a href="/admin/merchant">商家后台</a> 登录。
-        </p>
       </div>
     );
   }
 
-  if (!data) return <p className="muted">加载中…</p>;
+  if (!data) return <Card><Empty>加载中…</Empty></Card>;
   const { staff, settings, auditLogs, health, stats } = data;
   const activeStaff = (staff || []).filter((s) => s.status === "active");
 
   return (
     <div>
-      {/* ===== Tab 导航 ===== */}
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", margin: "28px 0 4px" }}>
-        {[
-          ["overview", "总览"],
-          ["staff", `员工令牌 (${(staff || []).length})`],
-          ["settings", "站点设置"],
-          ["audit", `审计日志 (${(auditLogs || []).length})`],
-          ["health", "系统健康"],
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            className={`btn btn-sm ${tab === id ? "btn-primary" : "btn-outline"}`}
-            onClick={() => setTab(id)}
-          >
-            {label}
-          </button>
-        ))}
+      {/* ===== Tab 导航（iOS 分段控件质感）+ 锁定 ===== */}
+      <div className="adm-row" style={{ margin: "2px 0 6px" }}>
+        <Pills
+          items={[
+            ["overview", "总览"],
+            ["staff", "员工令牌", (staff || []).length],
+            ["settings", "站点设置"],
+            ["audit", "审计日志", (auditLogs || []).length],
+            ["health", "系统健康"],
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
         <button
-          className="btn btn-sm btn-outline"
-          style={{ marginLeft: "auto" }}
+          className="adm-btn adm-btn-danger adm-btn-sm adm-spacer"
           onClick={() => { sessionStorage.removeItem(TOKEN_KEY); setToken(null); setData(null); setForm(null); }}
         >
           锁定
         </button>
       </div>
-      {notice && <p style={{ color: "var(--fit)", fontSize: 13, margin: "10px 0" }}>✓ {notice}</p>}
-      {error && <p style={{ color: "#C0392B", fontSize: 13, margin: "10px 0" }}>{error}</p>}
+      {notice && <p style={{ color: "var(--adm-ok)", fontSize: 13, margin: "10px 0 2px", fontWeight: 600 }}>✓ {notice}</p>}
+      {error && <p style={{ color: "var(--adm-err)", fontSize: 13, margin: "10px 0 2px" }}>{error}</p>}
 
       {/* ===== 总览 ===== */}
       {tab === "overview" && (
         <>
-          <div className="baseline-kpis" style={{ gridTemplateColumns: "repeat(4, 1fr)", margin: "20px 0 8px" }}>
-            <div className="stat-box"><div className="num">${stats.gmvUsd.toLocaleString()}</div><div className="lbl">成交额 GMV (USD)</div></div>
-            <div className="stat-box">
-              <div className="num">${(stats.marginUsd ?? 0).toLocaleString()}</div>
-              <div className="lbl">毛利（毛利率 {stats.marginPct ?? 0}%）</div>
-            </div>
-            <div className="stat-box"><div className="num">{stats.orders}</div><div className="lbl">订单数（待发货 {stats.toShip}）</div></div>
-            <div className="stat-box"><div className="num" style={{ color: stats.afterSales ? "#C0392B" : undefined }}>{stats.afterSales}</div><div className="lbl">售后（换货/退货）</div></div>
-            <div className="stat-box"><div className="num">{stats.registeredUsers}</div><div className="lbl">注册会员</div></div>
-            <div className="stat-box"><div className="num">{stats.products ?? "—"}{stats.unlisted ? <span className="muted" style={{ fontSize: 13 }}>（{stats.unlisted} 已下架）</span> : null}</div><div className="lbl">在售商品</div></div>
-            <div className="stat-box"><div className="num">{activeStaff.length}</div><div className="lbl">在职员工（共 {(staff || []).length} 个令牌）</div></div>
-            <div className="stat-box">
-              <div className="num" style={{ color: health.status === "ok" ? "var(--fit)" : "#C0392B", fontSize: 22 }}>
-                {health.status === "ok" ? "正常" : "降级"}
-              </div>
-              <div className="lbl">系统状态（告警 {health.alerts.count}）</div>
-            </div>
+          <div className="adm-kpis">
+            <Kpi num={`$${stats.gmvUsd.toLocaleString()}`} lbl="成交额 GMV (USD)" />
+            <Kpi num={`$${(stats.marginUsd ?? 0).toLocaleString()}`} lbl="毛利" sub={`毛利率 ${stats.marginPct ?? 0}%`} />
+            <Kpi num={stats.orders} lbl="订单数" sub={`待发货 ${stats.toShip}`} />
+            <Kpi num={stats.afterSales} lbl="售后（换货/退货）" tone={stats.afterSales ? "err" : undefined} />
+            <Kpi num={stats.registeredUsers} lbl="注册会员" />
+            <Kpi num={stats.products ?? "—"} lbl="在售商品" sub={stats.unlisted ? `${stats.unlisted} 已下架` : undefined} />
+            <Kpi num={activeStaff.length} lbl="在职员工" sub={`共 ${(staff || []).length} 个令牌`} />
+            <Kpi
+              num={health.status === "ok" ? "正常" : "降级"}
+              lbl="系统状态"
+              sub={`告警 ${health.alerts.count}`}
+              tone={health.status === "ok" ? "ok" : "err"}
+            />
           </div>
-          <p className="muted" style={{ fontSize: 13 }}>
+          <p className="adm-muted" style={{ fontSize: 13 }}>
             管分工：本台管"人"与"站"（员工令牌 / 站点设置 / 审计 / 健康）· 员工在
             <a href="/admin/merchant" target="_blank" style={{ margin: "0 4px" }}>商家后台</a>
             管货与单（订单/库存/商品/优惠码/内容/评价/会员）· 数据 {POLL_MS / 1000}s 自动刷新
@@ -225,193 +225,195 @@ export default function MasterConsole() {
       {/* ===== 员工令牌 ===== */}
       {tab === "staff" && (
         <>
-          <h3 style={{ margin: "28px 0 12px" }}>员工令牌 — 签发给员工，用于商家后台登录</h3>
+          <Card title="员工令牌" small="签发给员工，用于商家后台登录">
+            {/* 新令牌一次性展示 */}
+            {issued && (
+              <div style={{ border: "1px solid rgba(52, 199, 89, 0.35)", background: "rgba(52, 199, 89, 0.1)", borderRadius: 14, padding: 16, margin: "0 0 18px" }}>
+                <b>新令牌已签发 —— 仅此一次完整显示</b>
+                <div className="adm-mono" style={{ margin: "10px 0", fontSize: 13, wordBreak: "break-all" }}>{issued.token}</div>
+                <button className="adm-btn adm-btn-primary adm-btn-sm" onClick={() => copyIssued(issued.token)}>
+                  {copied ? "已复制 ✓" : "复制令牌"}
+                </button>
+                <p className="adm-muted" style={{ marginTop: 10, marginBottom: 0, fontSize: 12 }}>
+                  请立即发给「{issued.name}」—— 员工在
+                  <a href="/admin/merchant" target="_blank" style={{ margin: "0 4px" }}>商家后台 /admin/merchant</a>
+                  输入此令牌登录；本页刷新后不再完整显示。员工离职时在此吊销即可。
+                </p>
+              </div>
+            )}
 
-          {/* 新令牌一次性展示 */}
-          {issued && (
-            <div style={{ border: "1px solid var(--fit)", background: "var(--fit-soft)", borderRadius: 10, padding: 16, margin: "0 0 20px" }}>
-              <b>新令牌已签发 —— 仅此一次完整显示</b>
-              <div className="mono" style={{ margin: "10px 0", fontSize: 13, wordBreak: "break-all" }}>{issued.token}</div>
-              <button className="btn btn-sm btn-primary" onClick={() => copyIssued(issued.token)}>
-                {copied ? "已复制 ✓" : "复制令牌"}
-              </button>
-              <p className="muted" style={{ marginTop: 10, marginBottom: 0 }}>
-                请立即发给「{issued.name}」—— 员工在
-                <a href="/admin/merchant" target="_blank" style={{ margin: "0 4px" }}>商家后台 /admin/merchant</a>
-                输入此令牌登录；本页刷新后不再完整显示。员工离职时在此吊销即可。
-              </p>
-            </div>
-          )}
-
-          {/* 签发表单 */}
-          <form
-            className="finder-form"
-            style={{ maxWidth: 720, margin: "0 0 24px" }}
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setBusy("staff-create"); setNotice(null); setError(null);
-              try {
-                const res = await fetch("/api/master/staff", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", "x-master-token": token },
-                  body: JSON.stringify({ action: "create", name: stName, role: stRole, note: stNote }),
-                });
-                const body = await res.json();
-                if (body.code !== 0) throw new Error(body.message);
-                setIssued({ name: body.data.staff.name, token: body.data.token });
-                setCopied(false);
-                setStName(""); setStNote(""); setStRole("staff");
-                await load(token);
-              } catch (e2) {
-                setError(e2.message);
-              } finally {
-                setBusy(null);
-              }
-            }}
-          >
-            <label htmlFor="st-name">签发新令牌</label>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <input
-                id="st-name"
-                style={{ flex: "2 1 180px" }}
-                placeholder="员工姓名（如：小王）"
-                value={stName}
-                onChange={(e) => setStName(e.target.value)}
-                maxLength={24}
-                required
-              />
-              <select
-                aria-label="角色"
-                style={{ flex: "1 1 120px" }}
-                value={stRole}
-                onChange={(e) => setStRole(e.target.value)}
-              >
-                <option value="staff">员工（仅商家后台）</option>
-                <option value="owner">管理员（可进总后台）</option>
-              </select>
-              <input
-                aria-label="备注"
-                style={{ flex: "2 1 180px" }}
-                placeholder="备注（如：仓库组 · 离职需回收）"
-                value={stNote}
-                onChange={(e) => setStNote(e.target.value)}
-                maxLength={60}
-              />
-              <button className="btn btn-primary" type="submit" disabled={busy === "staff-create" || !stName.trim()}>
-                {busy === "staff-create" ? "签发中…" : "签发令牌"}
-              </button>
-            </div>
-          </form>
+            {/* 签发表单 */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setBusy("staff-create"); setNotice(null); setError(null);
+                try {
+                  const res = await fetch("/api/master/staff", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-master-token": token },
+                    body: JSON.stringify({ action: "create", name: stName, role: stRole, note: stNote }),
+                  });
+                  const body = await res.json();
+                  if (body.code !== 0) throw new Error(body.message);
+                  setIssued({ name: body.data.staff.name, token: body.data.token });
+                  setCopied(false);
+                  setStName(""); setStNote(""); setStRole("staff");
+                  await load(token);
+                } catch (e2) {
+                  setError(e2.message);
+                } finally {
+                  setBusy(null);
+                }
+              }}
+            >
+              <label htmlFor="st-name">签发新令牌</label>
+              <div className="adm-row">
+                <input
+                  id="st-name"
+                  style={{ flex: "2 1 180px" }}
+                  placeholder="员工姓名（如：小王）"
+                  value={stName}
+                  onChange={(e) => setStName(e.target.value)}
+                  maxLength={24}
+                  required
+                />
+                <select
+                  aria-label="角色"
+                  style={{ flex: "1 1 130px" }}
+                  value={stRole}
+                  onChange={(e) => setStRole(e.target.value)}
+                >
+                  <option value="staff">员工（仅商家后台）</option>
+                  <option value="owner">管理员（可进总后台）</option>
+                </select>
+                <input
+                  aria-label="备注"
+                  style={{ flex: "2 1 180px" }}
+                  placeholder="备注（如：仓库组 · 离职需回收）"
+                  value={stNote}
+                  onChange={(e) => setStNote(e.target.value)}
+                  maxLength={60}
+                />
+                <button className="adm-btn adm-btn-primary" type="submit" disabled={busy === "staff-create" || !stName.trim()}>
+                  {busy === "staff-create" ? "签发中…" : "签发令牌"}
+                </button>
+              </div>
+            </form>
+          </Card>
 
           {/* 员工表 */}
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
-                <th style={{ padding: "6px 0" }}>姓名</th><th>角色</th><th>令牌</th><th>状态</th><th>最近使用</th><th>创建时间</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(staff || []).map((s) => (
-                <tr key={s.id} style={{ borderTop: "1px solid var(--border)" }}>
-                  <td style={{ padding: "10px 0", fontWeight: 700 }}>
-                    {s.name}
-                    {s.note ? <div className="muted" style={{ fontSize: 11, fontWeight: 400 }}>{s.note}</div> : null}
-                  </td>
-                  <td>{ROLE_ZH[s.role] || s.role}</td>
-                  <td className="mono muted" style={{ fontSize: 11 }}>{s.tokenPreview}</td>
-                  <td style={{ fontWeight: 600, color: s.status === "active" ? "var(--fit)" : "#C0392B" }}>
-                    {s.status === "active" ? "在职" : "已吊销"}
-                  </td>
-                  <td className="muted" style={{ fontSize: 11 }}>
-                    {s.lastUsedAt ? fmtTime(s.lastUsedAt) : "从未使用"}
-                  </td>
-                  <td className="muted" style={{ fontSize: 11 }}>{fmtTime(s.createdAt)}</td>
-                  <td style={{ textAlign: "right" }}>
-                    {s.status === "active" && (
-                      <button
-                        className="btn btn-sm btn-outline"
-                        disabled={busy === `revoke-${s.id}`}
-                        onClick={() =>
-                          act("/api/master/staff", { action: "revoke", id: s.id }, `revoke-${s.id}`,
-                            `「${s.name}」令牌已吊销，商家后台立即失效`)
-                        }
-                      >
-                        {busy === `revoke-${s.id}` ? "…" : "吊销"}
-                      </button>
-                    )}
-                  </td>
+          <Card title="员工列表" small={`${(staff || []).length} 个令牌 · 吊销即时生效`}>
+            <table className="adm-table">
+              <thead>
+                <tr>
+                  <th>姓名</th><th>角色</th><th>令牌</th><th>状态</th><th>最近使用</th><th>创建时间</th><th></th>
                 </tr>
-              ))}
-              {!(staff || []).length && (
-                <tr><td colSpan={7} className="muted" style={{ padding: "16px 0" }}>还没有员工令牌 —— 签发第一个给店里的同事吧。</td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(staff || []).map((s) => (
+                  <tr key={s.id}>
+                    <td style={{ fontWeight: 700 }}>
+                      {s.name}
+                      {s.note ? <div className="adm-muted" style={{ fontSize: 11, fontWeight: 400 }}>{s.note}</div> : null}
+                    </td>
+                    <td>{ROLE_ZH[s.role] || s.role}</td>
+                    <td className="adm-mono adm-muted" style={{ fontSize: 11 }}>{s.tokenPreview}</td>
+                    <td>
+                      <Badge tone={s.status === "active" ? "ok" : "err"}>
+                        {s.status === "active" ? "在职" : "已吊销"}
+                      </Badge>
+                    </td>
+                    <td className="adm-muted" style={{ fontSize: 11 }}>
+                      {s.lastUsedAt ? fmtTime(s.lastUsedAt) : "从未使用"}
+                    </td>
+                    <td className="adm-muted" style={{ fontSize: 11 }}>{fmtTime(s.createdAt)}</td>
+                    <td style={{ textAlign: "right" }}>
+                      {s.status === "active" && (
+                        <button
+                          className="adm-btn adm-btn-danger adm-btn-sm"
+                          disabled={busy === `revoke-${s.id}`}
+                          onClick={() =>
+                            act("/api/master/staff", { action: "revoke", id: s.id }, `revoke-${s.id}`,
+                              `「${s.name}」令牌已吊销，商家后台立即失效`)
+                          }
+                        >
+                          {busy === `revoke-${s.id}` ? "…" : "吊销"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!(staff || []).length && (
+                  <tr><td colSpan={7} className="adm-muted" style={{ padding: "16px 10px" }}>还没有员工令牌 —— 签发第一个给店里的同事吧。</td></tr>
+                )}
+              </tbody>
+            </table>
+          </Card>
         </>
       )}
 
       {/* ===== 站点设置 ===== */}
       {tab === "settings" && form && (
         <>
-          <h3 style={{ margin: "28px 0 12px" }}>站点设置 — 保存后全站即时生效</h3>
-          <form
-            className="finder-form"
-            style={{ maxWidth: 640 }}
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const body = await act("/api/master/settings", {
-                siteName: form.siteName,
-                announcement: form.announcement,
-                defaultCurrency: form.defaultCurrency,
-                defaultLang: form.defaultLang,
-                maintenance: form.maintenance,
-              }, "settings-save", "站点设置已保存");
-              if (body?.data?.changed?.length) setNotice(`站点设置已保存：${body.data.changed.join("、")}`);
-            }}
-          >
-            <label htmlFor="set-name">店铺名称</label>
-            <input id="set-name" value={form.siteName} maxLength={40}
-              onChange={(e) => setForm({ ...form, siteName: e.target.value })} />
+          <Card title="站点设置" small="保存后全站即时生效">
+            <form
+              style={{ maxWidth: 640 }}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const body = await act("/api/master/settings", {
+                  siteName: form.siteName,
+                  announcement: form.announcement,
+                  defaultCurrency: form.defaultCurrency,
+                  defaultLang: form.defaultLang,
+                  maintenance: form.maintenance,
+                }, "settings-save", "站点设置已保存");
+                if (body?.data?.changed?.length) setNotice(`站点设置已保存：${body.data.changed.join("、")}`);
+              }}
+            >
+              <label htmlFor="set-name">店铺名称</label>
+              <input id="set-name" value={form.siteName} maxLength={40}
+                onChange={(e) => setForm({ ...form, siteName: e.target.value })} />
 
-            <label htmlFor="set-announce">公告栏文案（前台顶部横幅；留空 = 隐藏）</label>
-            <input id="set-announce" value={form.announcement} maxLength={160}
-              onChange={(e) => setForm({ ...form, announcement: e.target.value })} />
+              <label htmlFor="set-announce" style={{ marginTop: 14 }}>公告栏文案（前台顶部横幅；留空 = 隐藏）</label>
+              <input id="set-announce" value={form.announcement} maxLength={160}
+                onChange={(e) => setForm({ ...form, announcement: e.target.value })} />
 
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <label htmlFor="set-currency">默认货币（未设置偏好的访客）</label>
-                <select id="set-currency" value={form.defaultCurrency}
-                  onChange={(e) => setForm({ ...form, defaultCurrency: e.target.value })}>
-                  <option value="USD">USD $ 美元</option>
-                  <option value="EUR">EUR € 欧元</option>
-                  <option value="GBP">GBP £ 英镑</option>
-                </select>
+              <div className="adm-form-grid" style={{ marginTop: 14 }}>
+                <div>
+                  <label htmlFor="set-currency">默认货币（未设置偏好的访客）</label>
+                  <select id="set-currency" value={form.defaultCurrency}
+                    onChange={(e) => setForm({ ...form, defaultCurrency: e.target.value })}>
+                    <option value="USD">USD $ 美元</option>
+                    <option value="EUR">EUR € 欧元</option>
+                    <option value="GBP">GBP £ 英镑</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="set-lang">默认语言</label>
+                  <select id="set-lang" value={form.defaultLang}
+                    onChange={(e) => setForm({ ...form, defaultLang: e.target.value })}>
+                    <option value="en">English</option>
+                    <option value="zh">中文</option>
+                  </select>
+                </div>
               </div>
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <label htmlFor="set-lang">默认语言</label>
-                <select id="set-lang" value={form.defaultLang}
-                  onChange={(e) => setForm({ ...form, defaultLang: e.target.value })}>
-                  <option value="en">English</option>
-                  <option value="zh">中文</option>
-                </select>
-              </div>
-            </div>
 
-            <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={form.maintenance}
-                onChange={(e) => setForm({ ...form, maintenance: e.target.checked })}
-                style={{ width: 16, height: 16 }}
-              />
-              维护模式（前台显示维护横幅，结算下单被拦截）
-            </label>
+              <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, fontWeight: 500, cursor: "pointer", marginTop: 16 }}>
+                <input
+                  type="checkbox"
+                  checked={form.maintenance}
+                  onChange={(e) => setForm({ ...form, maintenance: e.target.checked })}
+                  style={{ width: 16, height: 16, padding: 0, accentColor: "var(--adm-accent)" }}
+                />
+                维护模式（前台显示维护横幅，结算下单被拦截）
+              </label>
 
-            <button className="btn btn-primary" type="submit" disabled={busy === "settings-save"}>
-              {busy === "settings-save" ? "保存中…" : "保存设置"}
-            </button>
-          </form>
-          <p className="muted" style={{ marginTop: 16, fontSize: 13, maxWidth: 640 }}>
+              <button className="adm-btn adm-btn-primary" style={{ marginTop: 18 }} type="submit" disabled={busy === "settings-save"}>
+                {busy === "settings-save" ? "保存中…" : "保存设置"}
+              </button>
+            </form>
+          </Card>
+          <p className="adm-muted" style={{ fontSize: 13, maxWidth: 640 }}>
             生效位置：公告栏与维护横幅在前台每个页面顶部；默认货币/语言作用于未设置偏好的访客；
             维护模式开启后前台仅展示横幅、浏览不受影响，下单接口返回 503。
           </p>
@@ -420,67 +422,66 @@ export default function MasterConsole() {
 
       {/* ===== 审计日志 ===== */}
       {tab === "audit" && (
-        <>
-          <h3 style={{ margin: "28px 0 12px" }}>审计日志 — 总后台与商家后台的全部写操作（最近 120 条）</h3>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <Card title="审计日志" small="总后台与商家后台的全部写操作（最近 120 条）">
+          <table className="adm-table">
             <thead>
-              <tr style={{ textAlign: "left", color: "var(--text-sub)" }}>
-                <th style={{ padding: "6px 0" }}>时间</th><th>操作者</th><th>动作</th><th>详情</th>
+              <tr>
+                <th>时间</th><th>操作者</th><th>动作</th><th>详情</th>
               </tr>
             </thead>
             <tbody>
               {(auditLogs || []).map((l, i) => (
-                <tr key={i} style={{ borderTop: "1px solid var(--border)" }}>
-                  <td className="muted mono" style={{ padding: "10px 0", fontSize: 11, whiteSpace: "nowrap" }}>{fmtTime(l.at)}</td>
+                <tr key={i}>
+                  <td className="adm-mono adm-muted" style={{ fontSize: 11, whiteSpace: "nowrap" }}>{fmtTime(l.at)}</td>
                   <td style={{ fontWeight: 600 }}>{l.actor}</td>
                   <td>{ACTION_ZH[l.action] || l.action}</td>
-                  <td className="muted">{l.detail}</td>
+                  <td className="adm-muted">{l.detail}</td>
                 </tr>
               ))}
               {!(auditLogs || []).length && (
-                <tr><td colSpan={4} className="muted" style={{ padding: "16px 0" }}>暂无记录 —— 后台的每一次写操作（发货 / 补货 / 商品 / 优惠码 / 内容 / 评价 / 积分）都会记入这里。</td></tr>
+                <tr><td colSpan={4} className="adm-muted" style={{ padding: "16px 10px" }}>暂无记录 —— 后台的每一次写操作（发货 / 补货 / 商品 / 优惠码 / 内容 / 评价 / 积分）都会记入这里。</td></tr>
               )}
             </tbody>
           </table>
-        </>
+        </Card>
       )}
 
       {/* ===== 系统健康 ===== */}
       {tab === "health" && (
         <>
-          <h3 style={{ margin: "28px 0 12px" }}>系统健康 — 探针同源 /api/health，告警同源监控看板</h3>
-          <div className="baseline-kpis" style={{ gridTemplateColumns: "repeat(4, 1fr)", margin: "20px 0 8px" }}>
-            <div className="stat-box">
-              <div className="num" style={{ color: health.status === "ok" ? "var(--fit)" : "#C0392B", fontSize: 22 }}>
-                {health.status === "ok" ? "正常" : "降级"}
-              </div>
-              <div className="lbl">总体状态</div>
+          <div className="adm-kpis">
+            <Kpi num={health.status === "ok" ? "正常" : "降级"} lbl="总体状态" tone={health.status === "ok" ? "ok" : "err"} />
+            <Kpi num={fmtDur(health.uptimeSec)} lbl="运行时长" />
+            <Kpi num={health.pipeline.emitted} lbl="埋点事件" sub={`丢弃 ${health.pipeline.discarded}`} />
+            <Kpi num={health.eventsDepth} lbl="事件缓冲深度" />
+            <Kpi num={health.products} lbl="商品目录" />
+            <Kpi num={health.fitSamples} lbl="脚型训练样本" />
+            <Kpi num={health.alerts.count} lbl="活跃告警" tone={health.alerts.count ? "warn" : "ok"} />
+            <div className="adm-kpi">
+              <div className="adm-kpi-num" style={{ fontSize: 16 }}>{health.node}</div>
+              <div className="adm-kpi-lbl">运行时</div>
+              <div className="adm-kpi-sub">{health.env}</div>
             </div>
-            <div className="stat-box"><div className="num" style={{ fontSize: 22 }}>{fmtDur(health.uptimeSec)}</div><div className="lbl">运行时长</div></div>
-            <div className="stat-box"><div className="num">{health.pipeline.emitted}</div><div className="lbl">埋点事件（丢弃 {health.pipeline.discarded}）</div></div>
-            <div className="stat-box"><div className="num">{health.eventsDepth}</div><div className="lbl">事件缓冲深度</div></div>
-            <div className="stat-box"><div className="num">{health.products}</div><div className="lbl">商品目录</div></div>
-            <div className="stat-box"><div className="num">{health.fitSamples}</div><div className="lbl">脚型训练样本</div></div>
-            <div className="stat-box"><div className="num" style={{ color: health.alerts.count ? "#D4880F" : "var(--fit)" }}>{health.alerts.count}</div><div className="lbl">活跃告警</div></div>
-            <div className="stat-box"><div className="num" style={{ fontSize: 16 }}>{health.node}<div className="muted" style={{ fontSize: 11 }}>{health.env}</div></div><div className="lbl">运行时</div></div>
           </div>
 
-          <h4 style={{ margin: "24px 0 8px" }}>活跃告警</h4>
-          {health.alerts.count ? (
-            health.alerts.active.map((a) => (
-              <p key={a.rule} style={{ fontSize: 13, margin: "4px 0", color: a.level === "critical" ? "#C0392B" : "#D4880F" }}>
-                ● {a.label}（{a.level}，自 {fmtTime(a.since)}）
-              </p>
-            ))
-          ) : (
-            <p className="muted" style={{ fontSize: 13 }}>无活跃告警 —— 退货率 / AI 覆盖率 / 管道丢弃 / 5xx 率四条规则均正常。</p>
-          )}
+          <Card title="活跃告警">
+            {health.alerts.count ? (
+              health.alerts.active.map((a) => (
+                <p key={a.rule} style={{ fontSize: 13, margin: "4px 0", fontWeight: 600, color: a.level === "critical" ? "var(--adm-err)" : "var(--adm-warn)" }}>
+                  ● {a.label}（{a.level}，自 {fmtTime(a.since)}）
+                </p>
+              ))
+            ) : (
+              <Empty>无活跃告警 —— 退货率 / AI 覆盖率 / 管道丢弃 / 5xx 率四条规则均正常。</Empty>
+            )}
+          </Card>
 
-          <h4 style={{ margin: "24px 0 8px" }}>管道检查</h4>
-          <p className="muted" style={{ fontSize: 13 }}>
-            {Object.entries(health.checks).map(([k, ok]) => `${k}:${ok ? "通过" : "异常"}`).join(" · ")}
-            —— sinks {health.pipeline.sinks.join(" / ")} · Kafka {health.pipeline.kafka}
-          </p>
+          <Card title="管道检查" small="探针同源 /api/health · 告警同源监控看板">
+            <p className="adm-muted" style={{ fontSize: 13, margin: 0 }}>
+              {Object.entries(health.checks).map(([k, ok]) => `${k}:${ok ? "通过" : "异常"}`).join(" · ")}
+              —— sinks {health.pipeline.sinks.join(" / ")} · Kafka {health.pipeline.kafka}
+            </p>
+          </Card>
         </>
       )}
     </div>
