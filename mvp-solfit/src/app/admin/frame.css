@@ -1,0 +1,62 @@
+/* ============================================================
+   frame.css — AdminFrame 布局（非 merchant 后台页的玻璃框架）
+   材质、令牌、壁纸全部复用 admin.css；本文件只做框架排版与页头插槽，
+   不重复定义玻璃材质（禁止改动 admin.css）。
+   ============================================================ */
+
+/* ---------- 框架外层 ----------
+   外层同时挂 .adm-shell（继承设计令牌、字体与 .adm-shell 的表单/链接基线）；
+   .adm-shell 原本是「侧栏 + 主区」的 flex 壳，这里覆盖为块级排版。 */
+.adm-shell.adm-frame {
+  display: block;
+  min-height: 100vh;
+}
+
+/* ---------- 内容容器（限宽 + 呼吸感，对齐 .adm-content 的节奏）---------- */
+.adm-frame-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+}
+
+/* ---------- 页头插槽 ---------- */
+.adm-frame-head {
+  margin-bottom: 26px;
+}
+.adm-frame-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--adm-sub);
+}
+.adm-frame-title {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 6px 0 8px;
+}
+.adm-frame-sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--adm-sub);
+  max-width: 780px;
+}
+
+/* ---------- 框架内的解锁门（如 MasterConsole 锁定态）----------
+   .adm-gate 默认 min-height:100vh 会撑出一屏空白，这里收窄为
+   页头下方居中的玻璃卡片区域。 */
+.adm-frame .adm-gate {
+  min-height: 72vh;
+}
+.adm-frame .adm-gate-card {
+  max-width: 100%;
+}
+
+/* ---------- 移动端 ---------- */
+@media (max-width: 900px) {
+  .adm-frame-inner { padding: 30px 14px 64px; }
+  .adm-frame-title { font-size: 25px; }
+  .adm-frame .adm-gate { min-height: 60vh; }
+}

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SOLFIT — AI-fitted footwear. Find your exact size in 60 seconds, guaranteed to fit or free exchange.">
+<title>SOLFIT — The pair that fits. Guaranteed.</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="home">
+
+<!-- ===== canonical app shell (frozen — identical on every page) ===== -->
+<div class="announce">Free size exchanges on every order — the <b>SOLFIT Fit Guarantee</b> &middot; Ships to 40+ countries</div>
+<header class="site-header">
+  <div class="header-inner">
+    <button class="icon-btn nav-toggle" id="navToggle" aria-label="Open menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+    </button>
+    <a class="logo" href="index.html" aria-label="SOLFIT home">SOL<span class="mark">FIT</span></a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="index.html#why" data-nav="why">Why SOLFIT</a>
+      <a href="index.html#fit-science" data-nav="fit-science">Fit Science</a>
+      <a href="index.html#reviews" data-nav="reviews">Reviews</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" id="searchBtn" aria-label="Search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
+      <button class="icon-btn" id="accountBtn" aria-label="Account">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
+      <button class="icon-btn" id="cartBtn" aria-label="Open cart">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobileNav" aria-label="Mobile navigation">
+    <a href="shop.html" data-nav="shop">Shop</a>
+    <a href="index.html#why" data-nav="why">Why SOLFIT</a>
+    <a href="index.html#fit-science" data-nav="fit-science">Fit Science</a>
+    <a href="index.html#reviews" data-nav="reviews">Reviews</a>
+  </nav>
+</header>
+
+<main>
+  <!-- ===== hero ===== -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-copy reveal">
+        <div class="eyebrow eyebrow--accent">AI-fitted footwear</div>
+        <h1 class="h1">The pair that fits.<br>Guaranteed.</h1>
+        <p class="lede">63% of people wear the wrong shoe size. Our AI reads your feet in 60 seconds, matches them to our lasts, and backs it with a free-exchange guarantee.</p>
+        <div class="hero-cta">
+          <a class="btn btn-fit" href="product.html?id=1&amp;finder=1" id="homeFinderCta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+            Find my size — 60 sec
+          </a>
+          <a class="btn btn-outline" href="shop.html">Shop the collection</a>
+        </div>
+        <div class="hero-trust">
+          <div class="trust-item"><b>4.8/5</b> from 9,600+ reviews</div>
+          <div class="trust-item"><b>120k</b> feet fitted</div>
+          <div class="trust-item"><b>60-day</b> fit guarantee</div>
+        </div>
+      </div>
+      <div class="hero-photo reveal">
+        <img id="heroImg" alt="Woman walking in cream SOLFIT sneakers on a sunlit street">
+        <div class="float-card">
+          <span class="num">94%</span>
+          <span class="lbl">first-wear fit rate across 120,000 fittings</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== value strip ===== -->
+  <div class="value-strip">
+    <div class="value-grid">
+      <div class="value-item"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span><span><span class="t">Fit Guarantee</span><br><span class="s">Free size exchanges, 60 days</span></span></div>
+      <div class="value-item"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18h-5"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35a1 1 0 0 0-.78-.38H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg></span><span><span class="t">3–5 day delivery</span><br><span class="s">US &amp; EU warehouse express</span></span></div>
+      <div class="value-item"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg></span><span><span class="t">Free returns</span><br><span class="s">Local drop-off, no shipping labels</span></span></div>
+      <div class="value-item"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span><span><span class="t">Ships to 40+ countries</span><br><span class="s">Duties &amp; taxes shown at checkout</span></span></div>
+    </div>
+  </div>
+
+  <!-- ===== featured ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">Most fitted this month</div>
+        <h2 class="h2">Start with a proven pair</h2>
+        <p class="lede center" style="margin:0 auto">Every pair below is fitted most-ordered in its family — and every one is covered by the Fit Guarantee.</p>
+      </div>
+      <div class="product-grid" id="featuredGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== why solfit (AI capabilities) ===== -->
+  <section class="section" id="why">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow eyebrow--accent">Why SOLFIT</div>
+        <h2 class="h2">Three AI systems. One obsession: your fit.</h2>
+      </div>
+      <div class="feature-cards">
+        <div class="feature-card reveal">
+          <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg></span>
+          <h3 class="h3">AI Size Finder</h3>
+          <p>60-second fitting built on 120,000 real foot scans and our own last library.</p>
+          <ul>
+            <li><span class="tick"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Phone-camera foot measuring (demo: mock scan)</li>
+            <li><span class="tick"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Brand-to-brand size conversion</li>
+            <li><span class="tick"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Learns from every exchange you make</li>
+          </ul>
+        </div>
+        <div class="feature-card reveal">
+          <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span>
+          <h3 class="h3">Fit Stylist Chat</h3>
+          <p>Tell it an occasion or a fit problem — it pulls the right pairs and checks them against your profile.</p>
+          <ul>
+            <li><span class="tick"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Search by vibe: "wedding", "wide feet", "9-hour days"</li>
+            <li><span class="tick"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Only shows real stock, real prices — no hallucinations</li>
+            <li><span class="tick"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Speaks every site language natively</li>
+          </ul>
+        </div>
+        <div class="feature-card reveal">
+          <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+          <h3 class="h3">Fit Guarantee</h3>
+          <p>Wrong size? Exchange free within 60 days — returns are welcome because every one trains the engine.</p>
+          <ul>
+            <li><span class="tick"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Free exchange, local drop-off</li>
+            <li><span class="tick"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>94% first-wear fit rate</li>
+            <li><span class="tick"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Size-related returns down 40%</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== fit science band ===== -->
+  <section class="science-band" id="fit-science">
+    <div class="science-inner">
+      <div class="science-photo reveal">
+        <img id="scienceImg" alt="Artisan measuring a shoe last with calipers in the SOLFIT workshop">
+      </div>
+      <div class="reveal">
+        <div class="eyebrow eyebrow--accent">Fit Science</div>
+        <h2 class="h2">Not guesswork. Lasts, data, and a guarantee.</h2>
+        <p class="lede">Every SOLFIT style is built on our own lasts — the wooden forms that decide how a shoe fits. We digitize each one, map it against 120,000 real foot profiles, and recommend the pairing with a confidence score. Then we put our money where the measurement is.</p>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="num">94%</div><div class="lbl">first-wear fit rate</div></div>
+          <div class="stat-box"><div class="num">13</div><div class="lbl">measurement points per scan</div></div>
+          <div class="stat-box"><div class="num">40%</div><div class="lbl">fewer size-related returns vs. industry</div></div>
+        </div>
+        <p style="margin-top:20px"><a class="btn btn-primary" href="product.html?id=1&amp;finder=1">See it work on a real pair</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== reviews ===== -->
+  <section class="section" id="reviews">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="eyebrow">Fitted &amp; verified</div>
+        <h2 class="h2">They measured once. Then stopped worrying.</h2>
+      </div>
+      <div class="review-wall" id="homeReviews"></div>
+    </div>
+  </section>
+
+  <!-- ===== story ===== -->
+  <section class="section" id="story">
+    <div class="container center reveal">
+      <div class="eyebrow">Our story</div>
+      <h2 class="h2" style="max-width:22ch;margin-left:auto;margin-right:auto">We started SOLFIT because buying shoes online was a gamble — and the house always won.</h2>
+      <p class="lede center" style="margin:0 auto">Two founders, one stubborn belief: fit is a data problem before it's a leather problem. Four years of last-scanning, exchange-tracking and fitting algorithms later — the gamble is gone. Made responsibly in Portugal, shipped from local warehouses, fitted by machines that actually know your feet.</p>
+    </div>
+  </section>
+
+  <!-- ===== newsletter ===== -->
+  <section class="section--tight">
+    <div class="container">
+      <div class="newsletter-band reveal">
+        <div class="inner">
+          <div>
+            <h2 class="h2">Get $15 off your first fitted pair.</h2>
+            <p>Plus early access to new lasts and restocks. No spam, only shoes that fit.</p>
+          </div>
+          <form id="newsForm">
+            <input type="email" id="newsInput" placeholder="you@email.com" aria-label="Email address" required>
+            <button class="btn btn-primary" type="submit">Subscribe</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ===== footer (frozen — identical on every page) ===== -->
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo">SOL<span class="mark">FIT</span></div>
+      <p class="footer-note">The pair that fits, guaranteed. AI-fitted footwear built on 120,000+ real foot profiles. Prototype demo — no real transactions are processed.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="shop.html">All shoes</a></li>
+        <li><a href="shop.html?category=Loafers">Loafers</a></li>
+        <li><a href="shop.html?category=Sneakers">Sneakers</a></li>
+        <li><a href="shop.html?category=Heels">Heels</a></li>
+        <li><a href="shop.html?width=Wide">Wide fit</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Fit &amp; Help</h4>
+      <ul>
+        <li><a href="index.html#why">Fit Guarantee</a></li>
+        <li><a href="index.html#fit-science">Fit Science</a></li>
+        <li><a href="product.html?id=1&amp;finder=1">Start the Size Finder</a></li>
+        <li><a href="index.html#reviews">Reviews</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="index.html#story">Our story</a></li>
+        <li><a href="mailto:hello@solfit.demo">Contact us</a></li>
+      </ul>
+      <form class="newsletter-row" id="footerNewsForm">
+        <input type="email" id="footerNewsInput" placeholder="Email for restock alerts" aria-label="Email for restock alerts">
+        <button class="btn btn-primary btn-sm" type="submit">Join</button>
+      </form>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2026 SOLFIT Demo &middot; Cross-border duties &amp; taxes calculated at checkout (stubbed)</span>
+    <div class="pay-pills"><span class="pay-pill">VISA</span><span class="pay-pill">MASTERCARD</span><span class="pay-pill">AMEX</span><span class="pay-pill">PAYPAL</span><span class="pay-pill">KLARNA</span></div>
+  </div>
+</footer>
+
+<!-- ===== Fit Stylist chat (frozen — identical on every page) ===== -->
+<button class="chat-fab" id="chatFab" aria-label="Open Fit Stylist chat">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+  <span class="dot"></span>
+</button>
+<div class="chat-panel" id="chatPanel" role="dialog" aria-label="Fit Stylist chat">
+  <div class="chat-head">
+    <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.7a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3Z"/></svg></span>
+    <div class="t"><b>Fit Stylist</b><span><i class="on"></i>AI concierge — demo mode</span></div>
+    <button id="chatClose" aria-label="Close chat">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+  <div class="chat-log" id="chatLog"></div>
+  <div class="chat-chips" id="chatChips"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="Ask about a pair, a size, an occasion…" aria-label="Message the Fit Stylist">
+    <button class="chat-send" id="chatSend" aria-label="Send message">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ===== cart drawer (frozen — identical on every page) ===== -->
+<div class="drawer-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
+  <div class="cart-head">
+    <h3 class="h3">Your cart</h3>
+    <button class="icon-btn" id="cartClose" aria-label="Close cart">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-empty" id="cartEmpty">
+    <div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+    <p>Your cart is empty — your feet deserve better.</p>
+  </div>
+  <div class="ship-progress" id="shipProgress">
+    <span id="shipLabel">You're $120 away from free express shipping</span>
+    <div class="bar"><i id="shipBar"></i></div>
+  </div>
+  <div class="cart-foot" id="cartFoot">
+    <div class="subtotal-row"><span>Subtotal</span><span id="cartSubtotal">$0</span></div>
+    <p class="hint">Duties &amp; taxes calculated at checkout. Fit Guarantee applies to every pair.</p>
+    <button class="btn btn-primary btn-block" id="checkoutBtn" type="button">Checkout securely</button>
+  </div>
+</aside>
+
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<script src="mock.js"></script>
+<script src="api.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
